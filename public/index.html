@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html ng-app="orange">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,9 +8,122 @@
     <meta name="author" content="name">
     <meta name="description" content="description here">
     <meta name="keywords" content="keywords,here">
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font: 13px Helvetica, Arial;
+    }
+    
+    form {
+        background: #000;
+        padding: 3px;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+    }
+    
+    form input {
+        border: 0;
+        padding: 10px;
+        width: 80%;
+        margin-right: .5%;
+    }
+    
+    form button {
+        width: 9%;
+        background: rgb(130, 224, 255);
+        border: none;
+        padding: 10px;
+    }
+    
+    #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+    }
+    
+    #messages li {
+        padding: 5px 10px;
+    }
+    
+    #messages li:nth-child(odd) {
+        background: #eee;
+    }
+    
+    #typing {
+        width: 100%;
+        position: absolute;
+        bottom: 40px;
+        height: 40px;
+        background: grey;
+    }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/jquery/dist/jquery.min.js"></script>
+    <script>
+    var socket = io();
+    var typingTimer;
+    var typing = false;
+    var doneTypingInterval = 1000;
+    var $input = $('#m');
+
+    $(document).ready(function() {
+        $(document).keypress(function(e) {
+            if (e.which == 13) {
+                doneTyping();
+            }
+        });
+        $('form').submit(function() {
+            socket.emit('chat:message', $('#m').val());
+            $('#m').val('');
+            return false;
+        });
+
+        socket.on('chat:message', function(msg) {
+            $('#messages').append($('<li>').text(msg));
+        });
+
+        socket.on('chat:typing', function() {
+            $('#typing').text('A user is typing');
+        });
+
+        socket.on('chat:typing-stopped', function() {
+            $('#typing').text('');
+        });
+
+        //on keyup, start the countdown
+        $('#m').keyup(function() {
+            clearTimeout(typingTimer);
+            socket.emit('chat:typing');
+            typingTimer = setTimeout(doneTyping, doneTypingInterval);
+        });
+
+        //on keydown, clear the countdown 
+        $('#m').keydown(function() {
+            socket.emit('chat:typing');
+            clearTimeout(typingTimer);
+        });
+
+        //user is "finished typing," do something
+        function doneTyping() {
+            socket.emit('chat:typing-stopped');
+        }
+    });
+    </script>
 </head>
 
 <body>
+    <ul id="messages"></ul>
+    <div id="typing"></div>
+    <form action="">
+        <input id="m" autocomplete="off" />
+        <button>Send</button>
+    </form>
 </body>
-	it's working :)
+
 </html>
