@@ -5,8 +5,18 @@ var express = require('express'),
     mongoose = require('mongoose'),
     morgan = require('morgan'),
     bodyParser = require('body-parser'),
-    methodOverride = require('method-override'),
-    port = 4200;
+    methodOverride = require('method-override');
+
+require('dotenv').load();
+
+var port = process.env.PORT || 8080;
+
+mongoose.connect('mongodb://localhost/test');
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function callback() {
+    console.log("h");
+});
 
 app.use(express.static(__dirname + '/bower_components'));
 app.use(express.static(__dirname + '/public'));
@@ -21,35 +31,14 @@ app.use(bodyParser.json({
 })); // parse application/vnd.api+json as json
 app.use(methodOverride());
 
-app.get('/', function(req, res, next) {
-    res.sendFile('/index.html');
-});
+//Register route handlers
+app.use('/auth', require('./app/routes/auth'));
+app.use('/', require('./app/routes/web'));
 
+//Register the socket io logic
+require('./app/socket/io')(io);
+
+//Register server listener
 server.listen(port, function() {
     console.log('Server listening on port: ' + port);
-});
-
-
-io.sockets.on('connection', function(socket) {
-    console.log('a user connected');
-
-    //emitters
-    socket.emit('message', {
-        message: 'welcome to the chat'
-    });
-
-    //listeners
-    socket.on('disconnect', function() {
-        console.log('user disconnected');
-    });
-    socket.on('chat:typing', function () {
-    	socket.broadcast.emit('chat:typing');
-    });
-    socket.on('chat:typing-stopped', function () {
-    	socket.broadcast.emit('chat:typing-stopped');
-    });
-    socket.on('chat:message', function(msg) {
-        console.log('message: ' + msg);
-        socket.broadcast.emit('chat:message', msg);
-    });
 });
