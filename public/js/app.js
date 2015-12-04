@@ -7505,6 +7505,12 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
                 title: 'Profile | Edit',
                 controller: 'ProfileCtrl as Profile',
                 templateUrl: '/cache/profile/edit.html'
+            })
+            .state('app.simple.register', {
+                url: '/register',
+                title: 'Register',
+                controller: 'RegisterCtrl as Register',
+                templateUrl: '/cache/sessions/register.html'
             });
 
         $urlRouterProvider.otherwise('/profile');
@@ -7686,7 +7692,7 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 
 (function() {
     'use strict';
-    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.chat', 'orange.controller.profile']);
+    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.chat', 'orange.controller.profile', 'orange.controller.register']);
 })();
 
 (function() {
@@ -7708,6 +7714,25 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 
     		};
     	}
+    }
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.controller.register', [])
+        .controller('RegisterCtrl', Controller);
+
+    Controller.$inject = ['$scope'];
+
+    function Controller($scope) {
+        var vm = this;
+
+        init();
+
+        function init() {
+            vm.data = {};
+        }
     }
 })();
 
@@ -7813,8 +7838,8 @@ angular.module("orange.templates", []).run(["$templateCache", function($template
 $templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
 $templateCache.put("/cache/games/index.html","");
 $templateCache.put("/cache/includes/_nav.html","<div class=navbar-fixed><nav><div class=nav-wrapper><a href=#! class=brand-logo>Logo</a><ul class=\"right hide-on-med-and-down\"><li><a href=sass.html>Sass</a></li><li><a href=badges.html>Components</a></li></ul></div></nav></div>");
-$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li><a ui-sref=app.master.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div></div></div>");
+$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li ng-if=session.logged_in><a ui-sref=app.master.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div><div class=row><div class=\"col s12\"><p>Don\'t have an account? That\'s alright, register here :)</p><button class=\"btn pink waves-effect\" ng-click=register()>Register</button></div></div></div></div>");
 $templateCache.put("/cache/layouts/simple.html","<div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div>");
 $templateCache.put("/cache/profile/edit.html","edit me :)");
 $templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s12\"><div class=\"card-panel teal\"><span class=white-text><p>Name: {{session.current_user.name}}</p></span> <button class=\"btn pink lighten-2 waves-effect\" ui-sref=app.master.profile-edit>Edit</button></div></div></div>");
-$templateCache.put("/cache/sessions/register.html","");}]);
+$templateCache.put("/cache/sessions/register.html","<div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s6\"><input placeholder=Placeholder id=first_name type=text class=validate> <label for=first_name>First Name</label></div><div class=\"input-field col s6\"><input id=last_name type=text class=validate> <label for=last_name>Last Name</label></div></div><div class=row><div class=\"input-field col s12\"><input disabled=\"\" value=\"I am not editable\" id=disabled type=text class=validate> <label for=disabled>Disabled</label></div></div><div class=row><div class=\"input-field col s12\"><input id=password type=password class=validate> <label for=password>Password</label></div></div><div class=row><div class=\"input-field col s12\"><input id=email type=email class=validate> <label for=email>Email</label></div></div><button type=submit class=\"btn blue waves-effect\">Get Started</button></form></div>");}]);
