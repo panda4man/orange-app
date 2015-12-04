@@ -7472,11 +7472,24 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             })
             .state('app.chat', {
                 url: '/chat',
+                title: 'Chat',
                 controller: 'ChatCtrl as Base',
                 templateUrl: '/cache/chat.html'
+            })
+            .state('app.profile', {
+                url: '/profile',
+                title: 'Profile',
+                controller: 'ProfileCtrl as Profile',
+                templateUrl: '/cache/profile/index.html'
+            })
+            .state('app.profile-edit', {
+                url: '/profile/edit',
+                title: 'Profile | Edit',
+                controller: 'ProfileCtrl as Profile',
+                templateUrl: '/cache/profile/edit.html'
             });
 
-        $urlRouterProvider.otherwise('/chat');
+        $urlRouterProvider.otherwise('/profile');
     }
 })();
 
@@ -7485,13 +7498,14 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 	angular
 	.module('orange.constants', [])
 	.constant('Config', {
-		baseUrl: 'http://localhost:4200/'
+		baseUrl: 'http://localhost:4200/',
+		siteName: 'Orange Gaming'
 	});
 })();
 (function () {
 	'use strict';
 
-	angular.module('orange', ['btford.socket-io', 'satellizer', 'http-auth-interceptor', 'ui.router', 'orange.templates', 'orange.config', 'orange.factories', 'orange.services', 'orange.controllers']);
+	angular.module('orange', ['btford.socket-io', 'satellizer', 'http-auth-interceptor', 'ui.router', 'orange.templates', 'orange.config', 'orange.factories', 'orange.services', 'orange.controllers', 'orange.run']);
 })();
 (function() {
     'use strict';
@@ -7500,10 +7514,16 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
         .module('orange.run', [])
         .run(Run);
 
-    Run.$inject = [];
+    Run.$inject = ['$rootScope', '$state'];
 
-    function Run() {
+    function Run($rootScope, $state) {
+    	$(document).ready(function () {
+    		$(".dropdown-button").dropdown();
+    	});
 
+        $rootScope.$on('$stateChangeSuccess', function() {
+            $rootScope.title = $state.current.title;
+        });
     }
 })();
 
@@ -7513,15 +7533,16 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
         .module('orange.controller.base', [])
         .controller('BaseCtrl', Controller);
 
-    Controller.$inject = ['$rootScope', '$scope', 'authService', 'SessionsFactory'];
+    Controller.$inject = ['$rootScope', '$scope', 'authService', 'SessionsFactory', 'Config'];
 
-    function Controller($rootScope, $scope, authService, SessionsFactory) {
+    function Controller($rootScope, $scope, authService, SessionsFactory, Config) {
         var vm = this;
 
         init();
 
         function init() {
-            $scope.session = {};
+            $scope.session = SessionsFactory.session;
+            $scope.config = Config;
             vm.data = {
                 forms: {
                     login: {
@@ -7532,23 +7553,42 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             };
             console.log('Loading base controller');
 
-            $(function () {
+            SessionsFactory.profile();
+        }
+
+        $rootScope.$on('event:auth-loginRequired', function(events, msg) {
+            SessionsFactory.logout();
+            showLogin();
+        });
+
+        $rootScope.$on('event:auth-loginConfirmed', function (events, msg){
+            hideLoginModal();
+        });
+
+        function showLogin() {
+            $(function() {
                 $('#login').openModal();
             });
         }
 
-        $rootScope.$on('event:auth-loginRequired', function(event, data) {
-
-        });
+        function hideLoginModal() {
+            $(function() {
+                $('#login').closeModal();
+            });
+        }
 
         $scope.login = function() {
             SessionsFactory.login(vm.data.forms.login).then(function(res) {
-                console.log(res);
-                $scope.session.current_user = res.data.user;
-                $('#login').closeModal();
+                vm.data.forms.login = {};
+                authService.loginConfirmed();
+                hideLoginModal();
             }, function(err) {
                 console.log(err);
             });
+        }
+
+        $scope.logout = function() {
+            $rootScope.$broadcast('event:auth-loginRequired');
         }
     }
 })();
@@ -7623,7 +7663,29 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 
 (function() {
     'use strict';
-    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.chat']);
+    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.chat', 'orange.controller.profile']);
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.controller.profile', [])
+        .controller('ProfileCtrl', Controller);
+
+    Controller.$inject = ['$scope'];
+
+    function Controller($scope) {
+    	var vm = this;
+
+    	init();
+
+    	function init () {
+            console.log('loaded the profile controller');
+    		vm.data = {
+
+    		};
+    	}
+    }
 })();
 
 (function() {
@@ -7637,27 +7699,66 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
         .module('orange.factory.sessions', [])
         .factory('SessionsFactory', Factory);
 
-    Factory.$inject = ['$http', '$q', '$auth', 'Config'];
+    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config'];
 
-    function Factory($http, $q, $auth, Config) {
-    	var factory = {
-    		login: login
-    	};
+    function Factory($http, $timeout, $rootScope, $q, $auth, Config) {
+        var _session = {};
+        var factory = {
+            login: login,
+            logout: logout,
+            profile: profile,
+            session: _session
+        };
 
         return factory;
 
-    	function login (data) {
+        function login(data) {
             var deferred = $q.defer();
             var config = {
                 ignoreAuthModule: true
             };
-            $auth.login(data, config).then(function (res){
-                deferred.resolve(res);
-            }).catch(function (err){
+            $auth.login(data, config).then(function(res) {
+                localStorage.setItem('current_user', JSON.stringify(res.data.user));
+                _session.current_user = res.data.user;
+                _session.logged_in = true;
+                deferred.resolve();
+            }).catch(function(err) {
                 deferred.reject(err);
             });
             return deferred.promise;
-    	}
+        }
+
+        function logout () {
+            $auth.logout();
+            _session.logged_in = false;
+            _session.current_user = {};
+            localStorage.setItem('current_user', null);
+        }
+
+        function profile() {
+            var current_user = localStorage.getItem('current_user');
+
+            var deferred = $q.defer();
+
+            if (current_user === 'null' || current_user === null || current_user === undefined || current_user === 'undefined') {
+                $timeout(function () {
+                    $rootScope.$broadcast('event:auth-loginRequired');
+                }, 1);
+                deferred.reject();
+            } else {
+                current_user = JSON.parse(current_user);
+                $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
+                    localStorage.setItem('current_user', JSON.stringify(res.data));
+                    _session.current_user = res.data;
+                    _session.logged_in = true;
+                    deferred.resolve();
+                }).error(function(err) {
+                    deferred.reject(err);
+                });
+            }
+
+            return deferred.promise;
+        }
     }
 })();
 
@@ -7685,7 +7786,9 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
     angular.module('orange.services', []);
 })();
 
-angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/base.html","<div ui-view=\"\"></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div></div></div>");
-$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><h2>Hello: {{session.current_user.name}}</h2><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
+angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/base.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li><a ui-sref=app.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div></div></div>");
+$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
 $templateCache.put("/cache/games/index.html","");
-$templateCache.put("/cache/includes/_nav.html","<div class=navbar-fixed><nav><div class=nav-wrapper><a href=#! class=brand-logo>Logo</a><ul class=\"right hide-on-med-and-down\"><li><a href=sass.html>Sass</a></li><li><a href=badges.html>Components</a></li></ul></div></nav></div>");}]);
+$templateCache.put("/cache/includes/_nav.html","<div class=navbar-fixed><nav><div class=nav-wrapper><a href=#! class=brand-logo>Logo</a><ul class=\"right hide-on-med-and-down\"><li><a href=sass.html>Sass</a></li><li><a href=badges.html>Components</a></li></ul></div></nav></div>");
+$templateCache.put("/cache/profile/edit.html","edit me :)");
+$templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s12\"><div class=\"card-panel teal\"><span class=white-text><p>Name: {{session.current_user.name}}</p></span> <button class=\"btn waves-effect\" ui-sref=app.profile-edit>Edit</button></div></div></div>");}]);
