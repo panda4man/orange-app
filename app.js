@@ -15,7 +15,7 @@ mongoose.connect('mongodb://localhost/test');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function callback() {
-    console.log("h");
+    console.log('Mongoose is connected.');
 });
 
 app.use(express.static(__dirname + '/bower_components'));
@@ -32,8 +32,7 @@ app.use(bodyParser.json({
 app.use(methodOverride());
 
 //Register route handlers
-app.use('/auth', require('./app/routes/auth'));
-app.use('/', require('./app/routes/web'));
+app.use(require('./app/routes/'));
 
 //Register the socket io logic
 require('./app/socket/io')(io);
