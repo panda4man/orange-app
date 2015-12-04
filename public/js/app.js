@@ -7455,24 +7455,26 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
     'use strict';
 
     angular
-        .module('orange.config', [])
+        .module('orange.config', ['orange.constants'])
         .config(Config);
 
-    Config.$inject = ['$stateProvider', '$urlRouterProvider'];
+    Config.$inject = ['$stateProvider', '$urlRouterProvider', '$authProvider', 'Config'];
 
-    function Config($stateProvider, $urlRouterProvider) {
-    	$stateProvider
-    	.state('app', {
-    		url: '',
-    		abstract: true,
-            template: '<div ui-view></div>',
-            controller: 'BaseCtrl as Base'
-    	})
-        .state('app.chat', {
-            url: '/chat',
-            controller: 'ChatCtrl as Base',
-            templateUrl: '/cache/chat.html'
-        });
+    function Config($stateProvider, $urlRouterProvider, $authProvider, Config) {
+        $authProvider.baseUrl = Config.baseUrl;
+        $authProvider.loginUrl = '/auth';
+        $stateProvider
+            .state('app', {
+                url: '',
+                abstract: true,
+                templateUrl: '/cache/base.html',
+                controller: 'BaseCtrl as Base'
+            })
+            .state('app.chat', {
+                url: '/chat',
+                controller: 'ChatCtrl as Base',
+                templateUrl: '/cache/chat.html'
+            });
 
         $urlRouterProvider.otherwise('/chat');
     }
@@ -7480,8 +7482,16 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 
 (function () {
 	'use strict';
+	angular
+	.module('orange.constants', [])
+	.constant('Config', {
+		baseUrl: 'http://localhost:4200/'
+	});
+})();
+(function () {
+	'use strict';
 
-	angular.module('orange', ['btford.socket-io', 'ui.router', 'orange.templates', 'orange.config', 'orange.factories', 'orange.services', 'orange.controllers']);
+	angular.module('orange', ['btford.socket-io', 'satellizer', 'http-auth-interceptor', 'ui.router', 'orange.templates', 'orange.config', 'orange.factories', 'orange.services', 'orange.controllers']);
 })();
 (function() {
     'use strict';
@@ -7503,15 +7513,42 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
         .module('orange.controller.base', [])
         .controller('BaseCtrl', Controller);
 
-    Controller.$inject = [];
+    Controller.$inject = ['$rootScope', '$scope', 'authService', 'SessionsFactory'];
 
-    function Controller() {
+    function Controller($rootScope, $scope, authService, SessionsFactory) {
         var vm = this;
 
         init();
 
         function init() {
+            $scope.session = {};
+            vm.data = {
+                forms: {
+                    login: {
+                        username: '',
+                        password: ''
+                    }
+                }
+            };
             console.log('Loading base controller');
+
+            $(function () {
+                $('#login').openModal();
+            });
+        }
+
+        $rootScope.$on('event:auth-loginRequired', function(event, data) {
+
+        });
+
+        $scope.login = function() {
+            SessionsFactory.login(vm.data.forms.login).then(function(res) {
+                console.log(res);
+                $scope.session.current_user = res.data.user;
+                $('#login').closeModal();
+            }, function(err) {
+                console.log(err);
+            });
         }
     }
 })();
@@ -7523,9 +7560,9 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
         .module('orange.controller.chat', [])
         .controller('ChatCtrl', Controller);
 
-    Controller.$inject = ['SocketFactory']
+    Controller.$inject = ['$scope', 'SocketFactory']
 
-    function Controller(socket) {
+    function Controller($scope, socket) {
         var vm = this;
 
         init();
@@ -7591,12 +7628,37 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 
 (function() {
     'use strict';
-    angular.module('orange.services', []);
+    angular.module('orange.factories', ['orange.factory.socket', 'orange.factory.sessions']);
 })();
 
 (function() {
     'use strict';
-    angular.module('orange.factories', ['orange.factory.socket']);
+    angular
+        .module('orange.factory.sessions', [])
+        .factory('SessionsFactory', Factory);
+
+    Factory.$inject = ['$http', '$q', '$auth', 'Config'];
+
+    function Factory($http, $q, $auth, Config) {
+    	var factory = {
+    		login: login
+    	};
+
+        return factory;
+
+    	function login (data) {
+            var deferred = $q.defer();
+            var config = {
+                ignoreAuthModule: true
+            };
+            $auth.login(data, config).then(function (res){
+                deferred.resolve(res);
+            }).catch(function (err){
+                deferred.reject(err);
+            });
+            return deferred.promise;
+    	}
+    }
 })();
 
 (function() {
@@ -7614,14 +7676,16 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             ioSocket: myIoSocket
         });
         
-        
-        _mySocket.forward('broadcast');
-        _mySocket.forward('welcome');
-        _mySocket.forward('error');
         return _mySocket;
     }
 })();
 
-angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
+(function() {
+    'use strict';
+    angular.module('orange.services', []);
+})();
+
+angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/base.html","<div ui-view=\"\"></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div></div></div>");
+$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><h2>Hello: {{session.current_user.name}}</h2><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
 $templateCache.put("/cache/games/index.html","");
 $templateCache.put("/cache/includes/_nav.html","<div class=navbar-fixed><nav><div class=nav-wrapper><a href=#! class=brand-logo>Logo</a><ul class=\"right hide-on-med-and-down\"><li><a href=sass.html>Sass</a></li><li><a href=badges.html>Components</a></li></ul></div></nav></div>");}]);
