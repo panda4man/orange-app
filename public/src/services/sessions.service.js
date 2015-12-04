@@ -11,8 +11,7 @@
 		var self = this;
 
 		self.create = function (data, user) {
-			$window.localStorage['current_user'] = user;
-			console.log(data);
+			$window.localStorage['current_user'] = JSON.stringify(user);
 			data.session.current_user = user;
 			data.session.logged_in = true;
 		}
