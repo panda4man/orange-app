@@ -21,9 +21,9 @@ router.post('/', function(req, res) {
         } else if (user) {
             // check if password matches
             user.comparePassword(req.body.password, function(err, isMatch) {
-                if (err) return res.status(403).json(err);
+                if (err) return res.status(401).json(err);
 
-                if (!isMatch) return res.status(403).json({
+                if (!isMatch) return res.status(401).json({
                     success: false,
                     error: 'Invalid credentials.'
                 });
@@ -35,10 +35,10 @@ router.post('/', function(req, res) {
                 User.findOne({
                     'username': req.body.username
                 }, function(err, user) {
-                    if (err) return res.status(403).json(err);
+                    if (err) return res.status(401).json(err);
 
                     if (!user) {
-                        res.status(403).json({
+                        res.status(401).json({
                             success: false,
                             error: 'Could not find user.'
                         });
