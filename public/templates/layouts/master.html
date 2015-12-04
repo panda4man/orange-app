@@ -8,7 +8,7 @@
         <div class="nav-wrapper">
             <a href="#" class="brand-logo">{{config.siteName}}</a>
             <ul id="nav-mobile" class="right hide-on-med-and-down">
-                <li><a ui-sref="app.master.chat">Chat</a></li>
+                <li ng-if="session.logged_in"><a ui-sref="app.master.chat">Chat</a></li>
                 <li><a class="dropdown-button" href="#!" data-activates="dropdown1">{{session.current_user.name}}<i class="material-icons right"></i></a></li>
             </ul>
         </div>
@@ -37,6 +37,12 @@
                 </div>
                 <button class="btn waves-effect" type="submit">Login</button>
             </form>
+        </div>
+        <div class="row">
+            <div class="col s12">
+                <p>Don't have an account? That's alright, register here :)</p>
+                <button class="btn pink waves-effect" ng-click="register()">Register</button>
+            </div>
         </div>
     </div>
 </div>
