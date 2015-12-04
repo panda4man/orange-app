@@ -5,7 +5,8 @@ var router = express.Router();
 router.get('/', function(req, res) {
     User.find({}, function(err, users) {
         if (err) return res.status(400).json({
-            success: false
+            success: false,
+            error: err
         });
 
         res.status(200).json({success: true, data: users});
