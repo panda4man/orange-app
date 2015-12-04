@@ -4,15 +4,20 @@
         .module('orange.factory.sessions', [])
         .factory('SessionsFactory', Factory);
 
-    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config'];
+    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService'];
 
-    function Factory($http, $timeout, $rootScope, $q, $auth, Config) {
-        var _session = {};
+    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session) {
+        var _sessionData = {
+            session: {
+                current_user: null,
+                logged_in: false
+            }
+        };
         var factory = {
             login: login,
             logout: logout,
             profile: profile,
-            session: _session
+            session: _sessionData
         };
 
         return factory;
@@ -23,9 +28,7 @@
                 ignoreAuthModule: true
             };
             $auth.login(data, config).then(function(res) {
-                localStorage.setItem('current_user', JSON.stringify(res.data.user));
-                _session.current_user = res.data.user;
-                _session.logged_in = true;
+                Session.create(_sessionData, res.data.user);
                 deferred.resolve();
             }).catch(function(err) {
                 deferred.reject(err);
@@ -35,9 +38,7 @@
 
         function logout () {
             $auth.logout();
-            _session.logged_in = false;
-            _session.current_user = {};
-            localStorage.setItem('current_user', null);
+            Session.destroy(_sessionData);
         }
 
         function profile() {
@@ -53,9 +54,7 @@
             } else {
                 current_user = JSON.parse(current_user);
                 $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
-                    localStorage.setItem('current_user', JSON.stringify(res.data));
-                    _session.current_user = res.data;
-                    _session.logged_in = true;
+                    Session.create(_sessionData, res.data);
                     deferred.resolve();
                 }).error(function(err) {
                     deferred.reject(err);
