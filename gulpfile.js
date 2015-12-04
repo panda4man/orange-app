@@ -183,7 +183,7 @@ gulp.task('server', function() {
 });
 
 //Watch all sources to recompile
-gulp.task('watch', ['server', 'templateCache'], function() { 
+gulp.task('watch', ['js-prod', 'js-dev'], function() { 
     //Sass that we write in /styles dir
     var css_paths = [config.css.sassPath + '*.scss'].concat([config.css.sassImportsPath + '*.scss']);
     css_paths = css_paths.concat([config.css.sassOverridesPath + '*.scss']);
@@ -203,4 +203,4 @@ gulp.task('watch', ['server', 'templateCache'], function() { 
     }, ['js-dev', 'js-prod']);
 });
 
-gulp.task('default', ['server', 'bower', 'icons-fa', 'icons-ma', 'css-dev', 'css-prod', 'js-dev', 'js-prod', 'watch', 'templateCache']);
+gulp.task('default', ['bower', 'icons-fa', 'icons-ma', 'css-dev', 'css-prod', 'js-dev', 'js-prod', 'watch', 'templateCache']);
