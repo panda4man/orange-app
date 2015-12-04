@@ -4,9 +4,9 @@
         .module('orange.controller.base', [])
         .controller('BaseCtrl', Controller);
 
-    Controller.$inject = ['$rootScope', '$scope', 'authService', 'SessionsFactory', 'Config'];
+    Controller.$inject = ['$rootScope', '$scope', '$state', 'authService', 'SessionsFactory', 'Config'];
 
-    function Controller($rootScope, $scope, authService, SessionsFactory, Config) {
+    function Controller($rootScope, $scope, $state, authService, SessionsFactory, Config) {
         var vm = this;
 
         init();
@@ -46,6 +46,11 @@
             $(function() {
                 $('#login').closeModal();
             });
+        }
+
+        $scope.register = function () {
+            hideLoginModal();
+            $state.go('app.simple.register');
         }
 
         $scope.login = function() {
