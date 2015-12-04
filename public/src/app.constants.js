@@ -3,6 +3,7 @@
 	angular
 	.module('orange.constants', [])
 	.constant('Config', {
-		baseUrl: 'http://localhost:4200/'
+		baseUrl: 'http://localhost:4200/',
+		siteName: 'Orange Gaming'
 	});
 })();
