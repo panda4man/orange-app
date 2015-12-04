@@ -19,10 +19,23 @@
             })
             .state('app.chat', {
                 url: '/chat',
+                title: 'Chat',
                 controller: 'ChatCtrl as Base',
                 templateUrl: '/cache/chat.html'
+            })
+            .state('app.profile', {
+                url: '/profile',
+                title: 'Profile',
+                controller: 'ProfileCtrl as Profile',
+                templateUrl: '/cache/profile/index.html'
+            })
+            .state('app.profile-edit', {
+                url: '/profile/edit',
+                title: 'Profile | Edit',
+                controller: 'ProfileCtrl as Profile',
+                templateUrl: '/cache/profile/edit.html'
             });
 
-        $urlRouterProvider.otherwise('/chat');
+        $urlRouterProvider.otherwise('/profile');
     }
 })();
