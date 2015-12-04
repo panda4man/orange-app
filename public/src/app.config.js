@@ -52,6 +52,12 @@
                 title: 'Profile | Edit',
                 controller: 'ProfileCtrl as Profile',
                 templateUrl: '/cache/profile/edit.html'
+            })
+            .state('app.simple.register', {
+                url: '/register',
+                title: 'Register',
+                controller: 'RegisterCtrl as Register',
+                templateUrl: '/cache/sessions/register.html'
             });
 
         $urlRouterProvider.otherwise('/profile');
