@@ -12,9 +12,7 @@ var gulp = require('gulp'),
     connect = require('gulp-connect'),
     templateCache = require('gulp-angular-templatecache'),
     minifyHtml = require('gulp-minify-html'),
-    addStream = require('add-stream'),
-    spawn = require('child_process').spawn,
-    node;
+    addStream = require('add-stream');
 
 var config = {
     css: {
@@ -84,7 +82,7 @@ gulp.task('templateCache', function() {
             config.html.templateCache.options
         ))
         .pipe(gulp.dest('./.tmp'))
-        .pipe(connect.reload());
+        /*.pipe(connect.reload());*/;
 });
 
 //Clean the dist directory
@@ -112,7 +110,7 @@ gulp.task('css-dev', function() {
         .pipe(filter.restore)
         .pipe(concat('styles.css'))
         .pipe(gulp.dest(config.css.destCss))
-        .pipe(connect.reload());
+        /*.pipe(connect.reload());*/;
 });
 
 gulp.task('css-prod', function() {
@@ -133,7 +131,7 @@ gulp.task('css-prod', function() {
         .pipe(filter.restore)
         .pipe(concat('styles.min.css'))
         .pipe(gulp.dest(config.css.destCss))
-        .pipe(connect.reload());
+        /*.pipe(connect.reload());*/;
 });
 
 //Compile all angular sources to be used in the js compilation tasks
@@ -149,7 +147,7 @@ gulp.task('js-dev', ['clean:dist', 'angular', 'templateCache'], function() {
         .pipe(plumber())
         .pipe(concat('app.js'))
         .pipe(gulp.dest('./public/js/'))
-        .pipe(connect.reload());
+        /*.pipe(connect.reload());*/;
 });
 
 gulp.task('js-prod', ['clean:dist', 'angular', 'templateCache'], function() {
@@ -157,25 +155,15 @@ gulp.task('js-prod', ['clean:dist', 'angular', 'templateCache'], function() {
         .pipe(plumber())
         .pipe(concat('app.min.js'))
         .pipe(gulp.dest('./public/js/'))
-        .pipe(connect.reload());
+        /*.pipe(connect.reload());*/;
 });
 
 //Server with livereload
 gulp.task('server', function() {
-    /*
     connect.server({
         root: [__dirname],
         port: 8081,
         livereload: true
-    });*/
-    if (node) node.kill()
-    node = spawn('node', ['app.js'], {
-        stdio: 'inherit'
-    })
-    node.on('close', function(code) {
-        if (code === 8) {
-            gulp.log('Error detected, waiting for changes...');
-        }
     });
 });
 
