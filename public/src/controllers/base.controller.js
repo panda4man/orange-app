@@ -12,7 +12,7 @@
         init();
 
         function init() {
-            $scope.session = SessionsFactory.session;
+            $scope.session = SessionsFactory.session.session;
             $scope.config = Config;
             vm.data = {
                 forms: {
