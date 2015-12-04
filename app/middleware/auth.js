@@ -1,9 +1,9 @@
 var jwt = require('jsonwebtoken');
 
 module.exports = function(req, res, next) {
-    var token = req.headers['Authorization'];
+    var token = req.headers.authorization;
     if(!token) {
-        return res.status(403).json({
+        return res.status(401).json({
             success: false,
             message: "Missing auth header."
         });
@@ -12,11 +12,11 @@ module.exports = function(req, res, next) {
     var parts = token.split(' ');
 
     // decode token
-    if (token.length) {
+    if (parts.length) {
         // verifies secret and checks exp
         jwt.verify(parts[1], process.env.JWT_SECRET, function(err, decoded) {
             if (err) {
-                return res.status(403).json({
+                return res.status(401).json({
                     success: false,
                     message: 'Failed to authenticate token.'
                 });
@@ -31,7 +31,7 @@ module.exports = function(req, res, next) {
 
         // if there is no token
         // return an error
-        return res.status(403).send({
+        return res.status(401).send({
             success: false,
             message: 'No token provided.'
         });
