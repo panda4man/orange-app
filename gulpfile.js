@@ -142,20 +142,35 @@ gulp.task('angular', function() {
         .pipe(gulp.dest('./public/dist/js'));
 });
 
-gulp.task('js-dev', ['clean:dist', 'angular', 'templateCache'], function() {
-    return gulp.src([config.js.jqueryPath + 'jquery.min.js', config.js.socketIOPath + 'socket.io.js', config.js.materialPath + 'materialize.min.js', config.js.angular.dist, './public/src/**/*.js', './.tmp/templates.js'])
+gulp.task('js-source', function () {
+    return gulp.src('./public/src/**/*.js')
+        .pipe(plumber())
+        .pipe(concat('app.src.js'))
+        .pipe(gulp.dest('./public/dist/js'));
+});
+
+gulp.task('js-dev', ['clean:dist', 'js-source', 'angular', 'templateCache'], function() {
+    return gulp.src([config.js.jqueryPath + 'jquery.min.js', config.js.socketIOPath + 'socket.io.js', config.js.materialPath + 'materialize.min.js', config.js.angular.dist, './public/dist/js/app.src.js', './.tmp/templates.js'])
         .pipe(plumber())
         .pipe(concat('app.js'))
         .pipe(gulp.dest('./public/js/'))
         /*.pipe(connect.reload());*/;
 });
 
-gulp.task('js-prod', ['clean:dist', 'angular', 'templateCache'], function() {
-    return gulp.src([config.js.jqueryPath + 'jquery.min.js', config.js.socketIOPath + 'socket.io.js', config.js.materialPath + 'materialize.min.js', config.js.angular.dist, './public/src/**/*.js', './.tmp/templates.js'])
+gulp.task('js-prod', ['clean:dist', 'js-source', 'angular', 'templateCache'], function() {
+    var filter = gulpFilter(['*', '!*.min.js'], {
+        restore: true
+    });
+
+    var js = gulp.src([config.js.jqueryPath + 'jquery.min.js', config.js.socketIOPath + 'socket.io.js', config.js.materialPath + 'materialize.min.js', config.js.angular.dist, './public/dist/js/app.src.js', './.tmp/templates.js'])
         .pipe(plumber())
+        .pipe(filter)
+        .pipe(uglify())
+        .pipe(filter.restore)
         .pipe(concat('app.min.js'))
         .pipe(gulp.dest('./public/js/'))
         /*.pipe(connect.reload());*/;
+    return js;
 });
 
 //Server with livereload
@@ -175,23 +190,17 @@ gulp.task('watch', ['server', 'templateCache'], function() { 
 
     gulp.watch(css_paths, {
         interval: 500
-    }, ['css-dev', 'css-prod'], function() {
-        gulp.run('server');
-    }); 
+    }, ['css-dev', 'css-prod']); 
 
     //Recompile all js for dev
     gulp.watch(config.js.src + '**/*.js', {
         interval: 500
-    }, ['js-dev'], function() {
-        gulp.run('server');
-    });
+    }, ['js-dev', 'js-prod']);
 
     //Reload server on template change
     gulp.watch(config.html.src, {
         interval: 500
-    }, ['js-dev'], function() {
-        gulp.run('server');
-    });
+    }, ['js-dev', 'js-prod']);
 });
 
 gulp.task('default', ['server', 'bower', 'icons-fa', 'icons-ma', 'css-dev', 'css-prod', 'js-dev', 'js-prod', 'watch', 'templateCache']);
