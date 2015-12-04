@@ -11,17 +11,17 @@
     function Service($window) {
         var self = this;
 
-        self.parseJwt = function(token) {
+        self.parse = function(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace('-', '+').replace('_', '/');
             return JSON.parse($window.atob(base64));
         }
 
-        self.saveJwt = function (token) {
+        self.save = function (token) {
         	$window.localStorage['_satellizer_token'] = token;
         }
 
-        self.getJwt = function () {
+        self.get = function () {
         	return $window.localStorage['satellizer_token'];
         }
     }
