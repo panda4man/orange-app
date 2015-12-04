@@ -7565,7 +7565,7 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
         init();
 
         function init() {
-            $scope.session = SessionsFactory.session;
+            $scope.session = SessionsFactory.session.session;
             $scope.config = Config;
             vm.data = {
                 forms: {
@@ -7749,8 +7749,8 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 
     Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService'];
 
-    function Factory($http, $timeout, $rootScope, $q, $auth, Config, JWTService, SessionsService) {
-        var _session_data = {
+    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session) {
+        var _sessionData = {
             session: {
                 current_user: null,
                 logged_in: false
@@ -7760,7 +7760,7 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             login: login,
             logout: logout,
             profile: profile,
-            session: _session_data.session
+            session: _sessionData
         };
 
         return factory;
@@ -7771,7 +7771,7 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
                 ignoreAuthModule: true
             };
             $auth.login(data, config).then(function(res) {
-                SessionsService.create(_session_data, JSON.stringify(res.data.user));
+                Session.create(_sessionData, res.data.user);
                 deferred.resolve();
             }).catch(function(err) {
                 deferred.reject(err);
@@ -7779,9 +7779,9 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             return deferred.promise;
         }
 
-        function logout() {
+        function logout () {
             $auth.logout();
-            SessionsService.destroy(_session_data);
+            Session.destroy(_sessionData);
         }
 
         function profile() {
@@ -7790,14 +7790,14 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             var deferred = $q.defer();
 
             if (current_user === 'null' || current_user === null || current_user === undefined || current_user === 'undefined') {
-                $timeout(function() {
+                $timeout(function () {
                     $rootScope.$broadcast('event:auth-loginRequired');
                 }, 1);
                 deferred.reject();
             } else {
                 current_user = JSON.parse(current_user);
                 $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
-                    SessionsService.create(_session_data, JSON.stringify(res.data));
+                    Session.create(_sessionData, res.data);
                     deferred.resolve();
                 }).error(function(err) {
                     deferred.reject(err);
@@ -7841,17 +7841,17 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
     function Service($window) {
         var self = this;
 
-        self.parseJwt = function(token) {
+        self.parse = function(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace('-', '+').replace('_', '/');
             return JSON.parse($window.atob(base64));
         }
 
-        self.saveJwt = function (token) {
+        self.save = function (token) {
         	$window.localStorage['_satellizer_token'] = token;
         }
 
-        self.getJwt = function () {
+        self.get = function () {
         	return $window.localStorage['satellizer_token'];
         }
     }
@@ -7875,8 +7875,7 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 		var self = this;
 
 		self.create = function (data, user) {
-			$window.localStorage['current_user'] = user;
-			console.log(data);
+			$window.localStorage['current_user'] = JSON.stringify(user);
 			data.session.current_user = user;
 			data.session.logged_in = true;
 		}
@@ -7890,12 +7889,11 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
 		}
 	}
 })();
-angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/base.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li><a ui-sref=app.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div></div></div>");
-$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
+angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
 $templateCache.put("/cache/games/index.html","");
 $templateCache.put("/cache/includes/_nav.html","<div class=navbar-fixed><nav><div class=nav-wrapper><a href=#! class=brand-logo>Logo</a><ul class=\"right hide-on-med-and-down\"><li><a href=sass.html>Sass</a></li><li><a href=badges.html>Components</a></li></ul></div></nav></div>");
-$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li ng-if=session.logged_in><a ui-sref=app.master.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div><div class=row><div class=\"col s12\"><p>Don\'t have an account? That\'s alright, register here :)</p><button class=\"btn pink waves-effect\" ng-click=register()>Register</button></div></div></div></div>");
+$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li ng-if=session.logged_in><a ui-sref=app.master.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div><div class=row><div class=\"col s12\"><p>Don\'t have an account? That\'s alright, register here :)</p><button class=\"btn pink waves-effect\" ng-click=register()>Register</button></div></div></div></div>");
 $templateCache.put("/cache/layouts/simple.html","<div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div>");
 $templateCache.put("/cache/profile/edit.html","edit me :)");
-$templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s12\"><div class=\"card-panel teal\"><span class=white-text><p>Name: {{session.current_user.name}}</p></span> <button class=\"btn pink lighten-2 waves-effect\" ui-sref=app.master.profile-edit>Edit</button></div></div></div>");
+$templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s8 offset-s2\"><div class=\"card-panel teal lighten-1\"><div class=section><span class=white-text><p>Name: {{session.current_user.name}}</p><p>Email: {{session.current_user.email}}</p></span></div><div class=divider></div><div class=section><button class=\"btn pink lighten-2 waves-effect\" ui-sref=app.master.profile-edit>Edit</button></div></div></div></div>");
 $templateCache.put("/cache/sessions/register.html","<div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s6\"><input placeholder=Placeholder id=first_name type=text class=validate> <label for=first_name>First Name</label></div><div class=\"input-field col s6\"><input id=last_name type=text class=validate> <label for=last_name>Last Name</label></div></div><div class=row><div class=\"input-field col s12\"><input disabled=\"\" value=\"I am not editable\" id=disabled type=text class=validate> <label for=disabled>Disabled</label></div></div><div class=row><div class=\"input-field col s12\"><input id=password type=password class=validate> <label for=password>Password</label></div></div><div class=row><div class=\"input-field col s12\"><input id=email type=email class=validate> <label for=email>Email</label></div></div><button type=submit class=\"btn blue waves-effect\">Get Started</button></form></div>");}]);
