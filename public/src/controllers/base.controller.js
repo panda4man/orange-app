@@ -4,15 +4,16 @@
         .module('orange.controller.base', [])
         .controller('BaseCtrl', Controller);
 
-    Controller.$inject = ['$rootScope', '$scope', 'authService', 'SessionsFactory'];
+    Controller.$inject = ['$rootScope', '$scope', 'authService', 'SessionsFactory', 'Config'];
 
-    function Controller($rootScope, $scope, authService, SessionsFactory) {
+    function Controller($rootScope, $scope, authService, SessionsFactory, Config) {
         var vm = this;
 
         init();
 
         function init() {
-            $scope.session = {};
+            $scope.session = SessionsFactory.session;
+            $scope.config = Config;
             vm.data = {
                 forms: {
                     login: {
@@ -23,23 +24,42 @@
             };
             console.log('Loading base controller');
 
-            $(function () {
+            SessionsFactory.profile();
+        }
+
+        $rootScope.$on('event:auth-loginRequired', function(events, msg) {
+            SessionsFactory.logout();
+            showLogin();
+        });
+
+        $rootScope.$on('event:auth-loginConfirmed', function (events, msg){
+            hideLoginModal();
+        });
+
+        function showLogin() {
+            $(function() {
                 $('#login').openModal();
             });
         }
 
-        $rootScope.$on('event:auth-loginRequired', function(event, data) {
-
-        });
+        function hideLoginModal() {
+            $(function() {
+                $('#login').closeModal();
+            });
+        }
 
         $scope.login = function() {
             SessionsFactory.login(vm.data.forms.login).then(function(res) {
-                console.log(res);
-                $scope.session.current_user = res.data.user;
-                $('#login').closeModal();
+                vm.data.forms.login = {};
+                authService.loginConfirmed();
+                hideLoginModal();
             }, function(err) {
                 console.log(err);
             });
+        }
+
+        $scope.logout = function() {
+            $rootScope.$broadcast('event:auth-loginRequired');
         }
     }
 })();
