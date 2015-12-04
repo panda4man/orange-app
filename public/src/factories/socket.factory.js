@@ -13,10 +13,6 @@
             ioSocket: myIoSocket
         });
         
-        
-        _mySocket.forward('broadcast');
-        _mySocket.forward('welcome');
-        _mySocket.forward('error');
         return _mySocket;
     }
 })();

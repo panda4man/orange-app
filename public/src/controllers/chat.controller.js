@@ -5,9 +5,9 @@
         .module('orange.controller.chat', [])
         .controller('ChatCtrl', Controller);
 
-    Controller.$inject = ['SocketFactory']
+    Controller.$inject = ['$scope', 'SocketFactory']
 
-    function Controller(socket) {
+    function Controller($scope, socket) {
         var vm = this;
 
         init();
