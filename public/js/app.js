@@ -7747,15 +7747,20 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
         .module('orange.factory.sessions', [])
         .factory('SessionsFactory', Factory);
 
-    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config'];
+    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService'];
 
-    function Factory($http, $timeout, $rootScope, $q, $auth, Config) {
-        var _session = {};
+    function Factory($http, $timeout, $rootScope, $q, $auth, Config, JWTService, SessionsService) {
+        var _session_data = {
+            session: {
+                current_user: null,
+                logged_in: false
+            }
+        };
         var factory = {
             login: login,
             logout: logout,
             profile: profile,
-            session: _session
+            session: _session_data.session
         };
 
         return factory;
@@ -7766,9 +7771,7 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
                 ignoreAuthModule: true
             };
             $auth.login(data, config).then(function(res) {
-                localStorage.setItem('current_user', JSON.stringify(res.data.user));
-                _session.current_user = res.data.user;
-                _session.logged_in = true;
+                SessionsService.create(_session_data, JSON.stringify(res.data.user));
                 deferred.resolve();
             }).catch(function(err) {
                 deferred.reject(err);
@@ -7776,11 +7779,9 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             return deferred.promise;
         }
 
-        function logout () {
+        function logout() {
             $auth.logout();
-            _session.logged_in = false;
-            _session.current_user = {};
-            localStorage.setItem('current_user', null);
+            SessionsService.destroy(_session_data);
         }
 
         function profile() {
@@ -7789,16 +7790,14 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
             var deferred = $q.defer();
 
             if (current_user === 'null' || current_user === null || current_user === undefined || current_user === 'undefined') {
-                $timeout(function () {
+                $timeout(function() {
                     $rootScope.$broadcast('event:auth-loginRequired');
                 }, 1);
                 deferred.reject();
             } else {
                 current_user = JSON.parse(current_user);
                 $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
-                    localStorage.setItem('current_user', JSON.stringify(res.data));
-                    _session.current_user = res.data;
-                    _session.logged_in = true;
+                    SessionsService.create(_session_data, JSON.stringify(res.data));
                     deferred.resolve();
                 }).error(function(err) {
                     deferred.reject(err);
@@ -7829,11 +7828,68 @@ angular.module("btford.socket-io",[]).provider("socketFactory",function(){"use s
     }
 })();
 
+;
 (function() {
     'use strict';
-    angular.module('orange.services', []);
+
+    angular
+        .module('orange.service.jwt', [])
+        .service('JWTService', Service);
+
+    Service.$inject = ['$window'];
+
+    function Service($window) {
+        var self = this;
+
+        self.parseJwt = function(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace('-', '+').replace('_', '/');
+            return JSON.parse($window.atob(base64));
+        }
+
+        self.saveJwt = function (token) {
+        	$window.localStorage['_satellizer_token'] = token;
+        }
+
+        self.getJwt = function () {
+        	return $window.localStorage['satellizer_token'];
+        }
+    }
 })();
 
+(function() {
+    'use strict';
+    angular.module('orange.services', ['orange.service.jwt', 'orange.service.sessions']);
+})();
+
+;(function () {
+	'use strict';
+
+	angular
+	.module('orange.service.sessions', [])
+	.service('SessionsService', Service);
+
+	Service.$inject = ['$window'];
+
+	function Service ($window) {
+		var self = this;
+
+		self.create = function (data, user) {
+			$window.localStorage['current_user'] = user;
+			console.log(data);
+			data.session.current_user = user;
+			data.session.logged_in = true;
+		}
+
+		self.destroy = function (data) {
+			$window.localStorage.removeItem('_satellizer_token');
+			$window.localStorage.removeItem('satellizer_token');
+			$window.localStorage.removeItem('current_user');
+			data.session.current_user = {};
+			data.session.logged_in = false;
+		}
+	}
+})();
 angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/base.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li><a ui-sref=app.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div></div></div>");
 $templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input placeholder=Placeholder id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
 $templateCache.put("/cache/games/index.html","");
