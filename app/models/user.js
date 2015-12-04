@@ -74,6 +74,7 @@ UserSchema.pre('save', function(next) {
 UserSchema.method('toJSON', function() {
     var user = this.toObject();
     delete user.__v;
+    delete user.password;
     delete user._id;
     return user;
 });
