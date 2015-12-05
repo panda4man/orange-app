@@ -1,7 +1,7 @@
 var express = require('express');
 var User = require('../models/user');
 var auth_middle = require('../middleware/auth');
-var jwt = require('jsonwebtoken');
+var jwt = require('../helpers/jwt');
 var router = express.Router();
 
 router.post('/', function(req, res) {
@@ -28,9 +28,7 @@ router.post('/', function(req, res) {
                     error: 'Invalid credentials.'
                 });
 
-                var token = jwt.sign(user, process.env.JWT_SECRET, {
-                    expiresIn: process.env.JWT_EXPIRES // expires in 24 hours
-                });
+                var token = jwt.createToken(user);
 
                 User.findOne({
                     'username': req.body.username

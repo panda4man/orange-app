@@ -1,1 +1,72 @@
-edit me :)
+<div class="card-panel light-blue lighten-3">
+    <div class="row">
+        <form class="col s12" ng-submit="Profile.update()">
+            <div class="row">
+                <div class="input-field col s6">
+                    <input ng-model="session.current_user.name.first" id="first_name" type="text" class="validate">
+                    <label class="white-text" for="first_name">First Name</label>
+                    <div ng-if="errorCollection.errors.first_name" class="card-panel card-error red">
+                        <ul>
+                            <li ng-repeat="error in errorCollection.errors.first_name"><i class="tiny mdi-alert-warning"></i> {{error}}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="input-field col s6">
+                    <input ng-model="session.current_user.name.last" id="last_name" type="text" class="validate">
+                    <label class="white-text" for="last_name">Last Name</label>
+                    <div ng-if="errorCollection.errors.last_name" class="card-panel card-error red">
+                        <ul>
+                            <li ng-repeat="error in errorCollection.errors.last_name"><i class="tiny mdi-alert-warning"></i> {{error}}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input ng-model="session.current_user.username" id="username" type="text" class="validate">
+                    <label class="white-text" for="username">Username</label>
+                    <div ng-if="errorCollection.errors.username" class="card-panel card-error red">
+                        <ul>
+                            <li ng-repeat="error in errorCollection.errors.username"><i class="tiny mdi-alert-warning"></i> {{error}}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input ng-model="session.current_user.email" id="email" type="email" class="validate">
+                    <label class="white-text" for="email">Email</label>
+                    <div ng-if="errorCollection.errors.email" class="card-panel card-error red">
+                        <ul>
+                            <li ng-repeat="error in errorCollection.errors.email"><i class="tiny mdi-alert-warning"></i> {{error}}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input ng-model="session.current_user.age" id="age" type="tel" class="validate">
+                    <label class="white-text" for="age">Age</label>
+                    <div ng-if="errorCollection.errors.age" class="card-panel card-error red">
+                        <ul>
+                            <li ng-repeat="error in errorCollection.errors.age"><i class="tiny mdi-alert-warning"></i> {{error}}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input ng-model="session.current_user.password" id="password" type="password" class="validate">
+                    <label class="white-text" for="password">Password</label>
+                    <div ng-if="errorCollection.errors.password" class="card-panel card-error red">
+                        <ul>
+                            <li ng-repeat="error in errorCollection.errors.password"><i class="tiny mdi-alert-warning"></i> {{error}}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <button class="btn pink waves-effect" type="submit">Update</button>
+        </form>
+    </div>
+</div>

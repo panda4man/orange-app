@@ -4,9 +4,9 @@
         .module('orange.factory.sessions', [])
         .factory('SessionsFactory', Factory);
 
-    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService'];
+    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService', 'ErrorsFactory'];
 
-    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session) {
+    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session, ErrorsFactory) {
         var _sessionData = {
             session: {
                 current_user: null,
@@ -17,6 +17,7 @@
             login: login,
             logout: logout,
             profile: profile,
+            register: register,
             session: _sessionData
         };
 
@@ -60,6 +61,24 @@
                     deferred.reject(err);
                 });
             }
+
+            return deferred.promise;
+        }
+
+        function register (data) {
+            var deferred = $q.defer();
+
+            $http({
+                method: 'POST',
+                url: Config.baseUrl + 'sessions/sign-up',
+                data: data
+            }).success(function (res){
+                Session.create(_sessionData, res.user, res.token);
+                deferred.resolve();
+            }).error(function (err){
+                ErrorsFactory.registration(err);
+                deferred.reject();
+            });
 
             return deferred.promise;
         }

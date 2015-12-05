@@ -10,13 +10,12 @@ var UserSchema = new Schema({
     name: {
         first: String,
         last: String,
-        type: String,
-        required: true
+        required: true,
+        type: String
     },
     password: {
         type: String,
-        required: true/*,
-        select: false*/
+        required: true
     },
     username: {
         type: String,
@@ -29,12 +28,18 @@ var UserSchema = new Schema({
         required: true,
         validate: [validator.isEmail, 'invalid email'],
         index: true,
-        unique: true,
-        index: true
+        unique: true
     },
     age: {
         type: Number,
         default: null
+    }
+}, {
+    toObject: {
+        virtuals: true
+    },
+    toJSON: {
+        virtuals: true
     }
 });
 
@@ -46,8 +51,17 @@ UserSchema.virtual('name.full').get(function() {
     return this.name.first + ' ' + this.name.last;
 }).set(function(name) {
     var split = name.split(' ');
-    this.name.first = split[0];
-    this.name.last = split[1];
+    this.set('name.first', split[0]);
+    this.set('name.last', split[1]);
+});
+
+UserSchema.set('toJSON', {
+    getters: true,
+    virtuals: true
+});
+UserSchema.set('toObject', {
+    getters: true,
+    virtuals: true
 });
 
 UserSchema.pre('save', function(next) {
@@ -79,10 +93,13 @@ UserSchema.method('toJSON', function() {
     return user;
 });
 
-UserSchema.set('toObject', {
-    getters: true,
-    virtuals: true
-});
+UserSchema.methods.fill = function(data) {
+    this.name = data.name.first + ' ' + data.name.last;
+    this.username = data.username;
+    this.email = data.email;
+    this.age = data.age || null;
+    this.password = data.password;
+};
 
 UserSchema.methods.comparePassword = function(candidatePassword, cb) {
     bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {

@@ -24,6 +24,8 @@
     "satellizer": "~0.13.1",
     "angular-http-auth": "~1.2.3",
     "font-awesome": "~4.5.0",
-    "moment": "~2.10.6"
+    "moment": "~2.10.6",
+    "animate-sass": "~0.6.4",
+    "angular-animate": "~1.4.8"
   }
 }

@@ -4,18 +4,28 @@
         .module('orange.controller.profile', [])
         .controller('ProfileCtrl', Controller);
 
-    Controller.$inject = ['$scope'];
+    Controller.$inject = ['$scope', 'UsersFactory'];
 
-    function Controller($scope) {
-    	var vm = this;
+    function Controller($scope, UsersFactory) {
+        var vm = this;
 
-    	init();
+        init();
 
-    	function init () {
+        function init() {
             console.log('loaded the profile controller');
-    		vm.data = {
+            vm.data = {
+                forms: {
+                    edit: {}
+                }
+            };
+        }
 
-    		};
-    	}
+        vm.update = function() {
+            UsersFactory.update($scope.session.current_user).then(function () {
+
+            }, function () {
+
+            });
+        };
     }
 })();

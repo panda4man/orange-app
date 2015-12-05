@@ -1,3 +1,29 @@
 @import "materialize";
 @import "font-awesome";
 @import "variables";
+@import "animate";
+@import "mixins";
+.full-width {
+    width: 100%;
+}
+
+.container {
+    padding: 0 5px;
+}
+
+#content {
+    animation-duration: 0.45s;
+    &.ng-enter {
+        @include effect(flipInX);
+    }
+    &.ng-leave {
+        @include effect(flipOutX);
+    }
+}
+
+.card-panel {
+	&.card-error {
+		padding:1px 10px;
+        margin-bottom:0;
+	}
+}

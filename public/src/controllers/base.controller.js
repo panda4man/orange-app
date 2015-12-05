@@ -4,9 +4,9 @@
         .module('orange.controller.base', [])
         .controller('BaseCtrl', Controller);
 
-    Controller.$inject = ['$rootScope', '$scope', '$state', 'authService', 'SessionsFactory', 'Config'];
+    Controller.$inject = ['$rootScope', '$scope', '$state', 'authService', 'SessionsFactory', 'Config', 'ErrorsFactory'];
 
-    function Controller($rootScope, $scope, $state, authService, SessionsFactory, Config) {
+    function Controller($rootScope, $scope, $state, authService, SessionsFactory, Config, ErrorsFactory) {
         var vm = this;
 
         init();
@@ -14,6 +14,7 @@
         function init() {
             $scope.session = SessionsFactory.session.session;
             $scope.config = Config;
+            $scope.errorCollection = ErrorsFactory.errorCollection;
             vm.data = {
                 forms: {
                     login: {
@@ -38,7 +39,8 @@
 
         function showLogin() {
             $(function() {
-                $('#login').openModal();
+                if($state.current.name != "app.simple.register")
+                    $('#login').openModal();
             });
         }
 

@@ -10,8 +10,13 @@
 	function Service ($window) {
 		var self = this;
 
-		self.create = function (data, user) {
+		self.create = function (data, user, token) {
 			$window.localStorage['current_user'] = JSON.stringify(user);
+			if(token && token !== "" && token !== null && token !== "null"){
+				$http.defaults.headers.common.Authorization = 'Bearer ' + res.token;
+				$window.localStorage['satellizer_token'] = token;
+				$window.localStorage['_satellizer_token'] = token;
+			}
 			data.session.current_user = user;
 			data.session.logged_in = true;
 		}

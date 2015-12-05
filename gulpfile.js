@@ -21,7 +21,8 @@ var config = {
         sassOverridesPath: './public/scss/overrides/',
         destCss: './public/css',
         materialPath: './bower_components/Materialize/sass/',
-        fontawesomePath: './bower_components/font-awesome/scss/'
+        fontawesomePath: './bower_components/font-awesome/scss/',
+        animatePath: './bower_components/animate-sass/'
     },
     js: {
         jqueryPath: './bower_components/jquery/dist/',
@@ -29,7 +30,7 @@ var config = {
         socketIOPath: './node_modules/socket.io/node_modules/socket.io-client/',
         src: './public/src/',
         angular: {
-            files: ['./bower_components/angular/angular.min.js', './bower_components/angular-ui-router/release/angular-ui-router.min.js', './bower_components/satellizer/satellizer.min.js', './bower_components/angular-http-auth/src/http-auth-interceptor.js', './bower_components/angular-socket-io/socket.min.js'],
+            files: ['./bower_components/angular/angular.min.js', './bower_components/angular-ui-router/release/angular-ui-router.min.js', './bower_components/satellizer/satellizer.min.js', './bower_components/angular-http-auth/src/http-auth-interceptor.js', './bower_components/angular-socket-io/socket.min.js', './bower_components/angular-animate/angular-animate.min.js'],
             dist: './public/dist/js/all-angular.min.js'
         }
     },
@@ -102,7 +103,7 @@ gulp.task('css-dev', function() {
         .pipe(filter)
         .pipe(sass({ 
                 style: 'compressed',
-                includePaths: [ config.css.sassImportPath, config.css.materialPath, config.css.fontawesomePath]
+                includePaths: [ config.css.sassImportPath, config.css.materialPath, config.css.fontawesomePath, config.css.animatePath]
             }) 
             .on("error", notify.onError(function(error) { 
                 return "Error: " + error.message; 
@@ -121,7 +122,7 @@ gulp.task('css-prod', function() {
         .pipe(plumber())
         .pipe(filter)
         .pipe(sass({
-            includePaths:  [ config.css.sassImportPath, config.css.materialPath, config.css.fontawesomePath]
+            includePaths:  [ config.css.sassImportPath, config.css.materialPath, config.css.fontawesomePath, config.css.animatePath]
         }).on('error', sass.logError))
         .pipe(minifyCss({
             processImport: false,

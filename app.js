@@ -4,6 +4,7 @@ var express = require('express'),
     io = require('socket.io')(server),
     mongoose = require('mongoose'),
     morgan = require('morgan'),
+    expressValidator = require('express-validator'),
     bodyParser = require('body-parser'),
     methodOverride = require('method-override');
 
@@ -20,7 +21,7 @@ db.once('open', function callback() {
 
 app.use(express.static(__dirname + '/bower_components'));
 app.use(express.static(__dirname + '/public'));
-app.use(express.static(__dirname + '/views'));
+
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({
     'extended': 'true'
@@ -29,12 +30,13 @@ app.use(bodyParser.json()); // parse application/json
 app.use(bodyParser.json({
     type: 'application/vnd.api+json'
 })); // parse application/vnd.api+json as json
+app.use(expressValidator());
 app.use(methodOverride());
 
 app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Authorization Origin, X-Requested-With, Content-Type, Accept");
-  next();
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Authorization Origin, X-Requested-With, Content-Type, Accept");
+    next();
 });
 
 

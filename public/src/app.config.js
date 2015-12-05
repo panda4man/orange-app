@@ -14,7 +14,7 @@
             .state('app', {
                 url: '',
                 abstract: true,
-                template: '<div ui-view></div>',
+                template: '<div id="base" ui-view></div>',
                 controller: 'BaseCtrl as Base'
             })
             /**
