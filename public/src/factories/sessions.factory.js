@@ -18,10 +18,15 @@
             logout: logout,
             profile: profile,
             register: register,
-            session: _sessionData
+            session: _sessionData,
+            create: create
         };
 
         return factory;
+
+        function create (user) {
+            Session.create(_sessionData, user);
+        }
 
         function login(data) {
             var deferred = $q.defer();

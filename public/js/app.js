@@ -7611,184 +7611,6 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
 (function() {
     'use strict';
-
-    angular
-        .module('orange.factory.errors', [])
-        .factory('ErrorsFactory', Factory);
-
-    Factory.$inject = ['FormErrorsService'];
-
-    function Factory(FormErrorsService) {
-    	var _data = {
-    		errors: null
-    	};
-
-    	var factory = {
-    		errorCollection: _data,
-            registration: registration,
-            clear: clear
-    	};
-
-        return factory;
-
-    	function registration (errors) {
-    		_data.errors = FormErrorsService.format(errors);
-            console.log(_data.errors);
-    	}
-
-        function clear () {
-            _data.errors = null;
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-    angular.module('orange.factories', ['orange.factory.socket', 'orange.factory.sessions', 'orange.factory.errors', 'orange.factory.users']);
-})();
-
-(function() {
-    'use strict';
-    angular
-        .module('orange.factory.sessions', [])
-        .factory('SessionsFactory', Factory);
-
-    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService', 'ErrorsFactory'];
-
-    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session, ErrorsFactory) {
-        var _sessionData = {
-            session: {
-                current_user: null,
-                logged_in: false
-            }
-        };
-        var factory = {
-            login: login,
-            logout: logout,
-            profile: profile,
-            register: register,
-            session: _sessionData
-        };
-
-        return factory;
-
-        function login(data) {
-            var deferred = $q.defer();
-            var config = {
-                ignoreAuthModule: true
-            };
-            $auth.login(data, config).then(function(res) {
-                Session.create(_sessionData, res.data.user);
-                deferred.resolve();
-            }).catch(function(err) {
-                deferred.reject(err);
-            });
-            return deferred.promise;
-        }
-
-        function logout () {
-            $auth.logout();
-            Session.destroy(_sessionData);
-        }
-
-        function profile() {
-            var current_user = localStorage.getItem('current_user');
-
-            var deferred = $q.defer();
-
-            if (current_user === 'null' || current_user === null || current_user === undefined || current_user === 'undefined') {
-                $timeout(function () {
-                    $rootScope.$broadcast('event:auth-loginRequired');
-                }, 1);
-                deferred.reject();
-            } else {
-                current_user = JSON.parse(current_user);
-                $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
-                    Session.create(_sessionData, res.data);
-                    deferred.resolve();
-                }).error(function(err) {
-                    deferred.reject(err);
-                });
-            }
-
-            return deferred.promise;
-        }
-
-        function register (data) {
-            var deferred = $q.defer();
-
-            $http({
-                method: 'POST',
-                url: Config.baseUrl + 'sessions/sign-up',
-                data: data
-            }).success(function (res){
-                Session.create(_sessionData, res.user, res.token);
-                deferred.resolve();
-            }).error(function (err){
-                ErrorsFactory.registration(err);
-                deferred.reject();
-            });
-
-            return deferred.promise;
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-    angular
-        .module('orange.factory.socket', [])
-        .factory('SocketFactory', Factory);
-
-    Factory.$inject = ['socketFactory'];
-
-    function Factory(socketFactory) {
-        var myIoSocket = io.connect('http://localhost:4200');
-
-        var _mySocket = socketFactory({
-            ioSocket: myIoSocket
-        });
-        
-        return _mySocket;
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orange.factory.users', [])
-        .factory('UsersFactory', Factory);
-
-    Factory.$inject = ['$http', '$q', 'Config'];
-
-    function Factory($http, $q, Config) {
-    	var factory = {
-    		update: update
-    	};
-
-    	return factory;
-
-    	function update (data) {
-            var deferred = $q.defer();
-            $http({
-                method: 'PUT',
-                url: Config.baseUrl + 'api/users/' + data.id,
-                data: data
-            }).success(function (res){
-            	console.log(res);
-            	deferred.resolve();
-            }).error(function (err){
-            	console.log(err);
-            	deferred.reject();
-            });
-            return deferred.promise;
-        }
-    }
-})();
-
-(function() {
-    'use strict';
     angular
         .module('orange.controller.base', [])
         .controller('BaseCtrl', Controller);
@@ -7939,9 +7761,9 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
         .module('orange.controller.profile', [])
         .controller('ProfileCtrl', Controller);
 
-    Controller.$inject = ['$scope', 'UsersFactory'];
+    Controller.$inject = ['$scope', '$state', 'UsersFactory'];
 
-    function Controller($scope, UsersFactory) {
+    function Controller($scope, $state, UsersFactory) {
         var vm = this;
 
         init();
@@ -7957,7 +7779,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
         vm.update = function() {
             UsersFactory.update($scope.session.current_user).then(function () {
-
+                $state.go('app.master.profile');
             }, function () {
 
             });
@@ -7995,6 +7817,189 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
             }, function() {
 
             });
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orange.factory.errors', [])
+        .factory('ErrorsFactory', Factory);
+
+    Factory.$inject = ['FormErrorsService'];
+
+    function Factory(FormErrorsService) {
+    	var _data = {
+    		errors: null
+    	};
+
+    	var factory = {
+    		errorCollection: _data,
+            registration: registration,
+            clear: clear
+    	};
+
+        return factory;
+
+    	function registration (errors) {
+    		_data.errors = FormErrorsService.format(errors);
+            console.log(_data.errors);
+    	}
+
+        function clear () {
+            _data.errors = null;
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+    angular.module('orange.factories', ['orange.factory.socket', 'orange.factory.sessions', 'orange.factory.errors', 'orange.factory.users']);
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.factory.sessions', [])
+        .factory('SessionsFactory', Factory);
+
+    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService', 'ErrorsFactory'];
+
+    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session, ErrorsFactory) {
+        var _sessionData = {
+            session: {
+                current_user: null,
+                logged_in: false
+            }
+        };
+        var factory = {
+            login: login,
+            logout: logout,
+            profile: profile,
+            register: register,
+            session: _sessionData,
+            create: create
+        };
+
+        return factory;
+
+        function create (user) {
+            Session.create(_sessionData, user);
+        }
+
+        function login(data) {
+            var deferred = $q.defer();
+            var config = {
+                ignoreAuthModule: true
+            };
+            $auth.login(data, config).then(function(res) {
+                Session.create(_sessionData, res.data.user);
+                deferred.resolve();
+            }).catch(function(err) {
+                deferred.reject(err);
+            });
+            return deferred.promise;
+        }
+
+        function logout () {
+            $auth.logout();
+            Session.destroy(_sessionData);
+        }
+
+        function profile() {
+            var current_user = localStorage.getItem('current_user');
+
+            var deferred = $q.defer();
+
+            if (current_user === 'null' || current_user === null || current_user === undefined || current_user === 'undefined') {
+                $timeout(function () {
+                    $rootScope.$broadcast('event:auth-loginRequired');
+                }, 1);
+                deferred.reject();
+            } else {
+                current_user = JSON.parse(current_user);
+                $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
+                    Session.create(_sessionData, res.data);
+                    deferred.resolve();
+                }).error(function(err) {
+                    deferred.reject(err);
+                });
+            }
+
+            return deferred.promise;
+        }
+
+        function register (data) {
+            var deferred = $q.defer();
+
+            $http({
+                method: 'POST',
+                url: Config.baseUrl + 'sessions/sign-up',
+                data: data
+            }).success(function (res){
+                Session.create(_sessionData, res.user, res.token);
+                deferred.resolve();
+            }).error(function (err){
+                ErrorsFactory.registration(err);
+                deferred.reject();
+            });
+
+            return deferred.promise;
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.factory.socket', [])
+        .factory('SocketFactory', Factory);
+
+    Factory.$inject = ['socketFactory'];
+
+    function Factory(socketFactory) {
+        var myIoSocket = io.connect('http://localhost:4200');
+
+        var _mySocket = socketFactory({
+            ioSocket: myIoSocket
+        });
+        
+        return _mySocket;
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orange.factory.users', [])
+        .factory('UsersFactory', Factory);
+
+    Factory.$inject = ['$http', '$q', 'Config', 'SessionsFactory'];
+
+    function Factory($http, $q, Config, SessionsFactory) {
+    	var factory = {
+    		update: update
+    	};
+
+    	return factory;
+
+    	function update (data) {
+            var deferred = $q.defer();
+            $http({
+                method: 'PUT',
+                url: Config.baseUrl + 'api/users/' + data.id,
+                data: data
+            }).success(function (res){
+            	SessionsFactory.create(res.data);
+            	deferred.resolve();
+            }).error(function (err){
+            	console.log(err);
+            	deferred.reject();
+            });
+            return deferred.promise;
         }
     }
 })();
@@ -8094,6 +8099,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 		var self = this;
 
 		self.create = function (data, user, token) {
+			console.log(user);
 			$window.localStorage['current_user'] = JSON.stringify(user);
 			if(token && token !== "" && token !== null && token !== "null"){
 				$http.defaults.headers.common.Authorization = 'Bearer ' + res.token;
@@ -8116,8 +8122,8 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
 $templateCache.put("/cache/games/index.html","");
 $templateCache.put("/cache/includes/_nav.html","<div class=navbar-fixed><nav><div class=nav-wrapper><a href=#! class=brand-logo>Logo</a><ul class=\"right hide-on-med-and-down\"><li><a href=sass.html>Sass</a></li><li><a href=badges.html>Components</a></li></ul></div></nav></div>");
-$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li ng-if=session.logged_in><a ui-sref=app.master.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=\"container full-width\"><div class=row><div class=\"col s12\" id=content ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div><div class=row><div class=\"col s12\"><p>Don\'t have an account? That\'s alright, register here :)</p><button class=\"btn pink waves-effect\" ng-click=register()>Register</button></div></div></div></div>");
+$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li ng-if=session.logged_in><a ui-sref=app.master.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.full_name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=\"container full-width\"><div class=row><div class=\"col s12\" id=content ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div><div class=row><div class=\"col s12\"><p>Don\'t have an account? That\'s alright, register here :)</p><button class=\"btn pink waves-effect\" ng-click=register()>Register</button></div></div></div></div>");
 $templateCache.put("/cache/layouts/simple.html","<div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div>");
 $templateCache.put("/cache/profile/edit.html","<div class=\"card-panel light-blue lighten-3\"><div class=row><form class=\"col s12\" ng-submit=Profile.update()><div class=row><div class=\"input-field col s6\"><input ng-model=session.current_user.name.first id=first_name type=text class=validate> <label class=white-text for=first_name>First Name</label><div ng-if=errorCollection.errors.first_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.first_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div><div class=\"input-field col s6\"><input ng-model=session.current_user.name.last id=last_name type=text class=validate> <label class=white-text for=last_name>Last Name</label><div ng-if=errorCollection.errors.last_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.last_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.username id=username type=text class=validate> <label class=white-text for=username>Username</label><div ng-if=errorCollection.errors.username class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.username\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.email id=email type=email class=validate> <label class=white-text for=email>Email</label><div ng-if=errorCollection.errors.email class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.email\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.age id=age type=tel class=validate> <label class=white-text for=age>Age</label><div ng-if=errorCollection.errors.age class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.age\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.password id=password type=password class=validate> <label class=white-text for=password>Password</label><div ng-if=errorCollection.errors.password class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.password\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><button class=\"btn pink waves-effect\" type=submit>Update</button></form></div></div>");
-$templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s8 offset-s2\"><div class=\"card-panel light-blue lighten-3\"><div class=section><span class=white-text><p><b>Name</b>: {{session.current_user.name}}</p><p><b>Username</b>: {{session.current_user.username}}</p><p><b>Email</b>: {{session.current_user.email}}</p><p><b>Age</b>: {{session.current_user.age}}</p></span></div><div class=divider></div><div class=section><button class=\"btn pink lighten-2 waves-effect\" ui-sref=app.master.profile-edit>Edit</button></div></div></div></div>");
+$templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s8 offset-s2\"><div class=\"card-panel light-blue lighten-3\"><div class=section><span class=white-text><p><b>Name</b>: {{session.current_user.full_name}}</p><p><b>Username</b>: {{session.current_user.username}}</p><p><b>Email</b>: {{session.current_user.email}}</p><p><b>Age</b>: {{session.current_user.age}}</p></span></div><div class=divider></div><div class=section><button class=\"btn pink lighten-2 waves-effect\" ui-sref=app.master.profile-edit>Edit</button></div></div></div></div>");
 $templateCache.put("/cache/sessions/register.html","<div class=\"card-panel light-blue lighten-3\"><h2>Register</h2><div class=row><form class=\"col s12\" ng-submit=Register.register()><div class=row><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.first id=first_name type=text class=validate> <label class=white-text for=first_name>First Name</label><div ng-if=errorCollection.errors.first_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.first_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.last id=last_name type=text class=validate> <label class=white-text for=last_name>Last Name</label><div ng-if=errorCollection.errors.last_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.last_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.username id=username type=text class=validate> <label class=white-text for=username>Username</label><div ng-if=errorCollection.errors.username class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.username\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.password id=password type=password class=validate> <label class=white-text for=password>Password</label><div ng-if=errorCollection.errors.password class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.password\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.email id=email type=email class=validate> <label class=white-text for=email>Email</label><div ng-if=errorCollection.errors.email class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.email\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><button type=submit class=\"btn blue waves-effect\">Get Started</button></form></div></div>");}]);

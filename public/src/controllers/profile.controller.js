@@ -4,9 +4,9 @@
         .module('orange.controller.profile', [])
         .controller('ProfileCtrl', Controller);
 
-    Controller.$inject = ['$scope', 'UsersFactory'];
+    Controller.$inject = ['$scope', '$state', 'UsersFactory'];
 
-    function Controller($scope, UsersFactory) {
+    function Controller($scope, $state, UsersFactory) {
         var vm = this;
 
         init();
@@ -22,7 +22,7 @@
 
         vm.update = function() {
             UsersFactory.update($scope.session.current_user).then(function () {
-
+                $state.go('app.master.profile');
             }, function () {
 
             });

@@ -5,9 +5,9 @@
         .module('orange.factory.users', [])
         .factory('UsersFactory', Factory);
 
-    Factory.$inject = ['$http', '$q', 'Config'];
+    Factory.$inject = ['$http', '$q', 'Config', 'SessionsFactory'];
 
-    function Factory($http, $q, Config) {
+    function Factory($http, $q, Config, SessionsFactory) {
     	var factory = {
     		update: update
     	};
@@ -21,7 +21,7 @@
                 url: Config.baseUrl + 'api/users/' + data.id,
                 data: data
             }).success(function (res){
-            	console.log(res);
+            	SessionsFactory.create(res.data);
             	deferred.resolve();
             }).error(function (err){
             	console.log(err);
