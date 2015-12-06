@@ -9,9 +9,7 @@ var mongoose = require('mongoose'),
 var UserSchema = new Schema({
     name: {
         first: String,
-        last: String,
-        required: true,
-        type: String
+        last: String
     },
     password: {
         type: String,
@@ -47,7 +45,7 @@ var UserSchema = new Schema({
  * Mutators
  * @return {[type]}   [description]
  */
-UserSchema.virtual('name.full').get(function() {
+UserSchema.virtual('full_name').get(function() {
     return this.name.first + ' ' + this.name.last;
 }).set(function(name) {
     var split = name.split(' ');
@@ -62,6 +60,13 @@ UserSchema.set('toJSON', {
 UserSchema.set('toObject', {
     getters: true,
     virtuals: true
+});
+
+UserSchema.method('toJSON', function() {
+    var user = this.toObject();
+    delete user.__v;
+    delete user.password;
+    return user;
 });
 
 UserSchema.pre('save', function(next) {
@@ -85,19 +90,11 @@ UserSchema.pre('save', function(next) {
     });
 });
 
-UserSchema.method('toJSON', function() {
-    var user = this.toObject();
-    delete user.__v;
-    delete user.password;
-    delete user._id;
-    return user;
-});
-
 UserSchema.methods.fill = function(data) {
-    this.name = data.name.first + ' ' + data.name.last;
+    this.name = data.name;
     this.username = data.username;
     this.email = data.email;
-    this.age = data.age || null;
+    this.age = data.age || this.age;
     this.password = data.password;
 };
 
