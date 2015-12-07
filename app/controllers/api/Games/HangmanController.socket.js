@@ -6,7 +6,6 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
     //Listeners
     socket.on('create', function(data) {
         loading(endpoint, socket, false, true, '');
-        console.log(endpoint.sockets);
         var game = new Hangman();
         game.fill(data);
         game.save(function(err) {

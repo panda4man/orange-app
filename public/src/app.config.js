@@ -41,6 +41,18 @@
                 controller: 'HangmanCtrl as Hangman',
                 templateUrl: '/cache/games/hangman/index.html'
             })
+            .state('app.master.hangman-new', {
+                url: '/hangman/new',
+                title: 'Hangman | new',
+                controller: 'HangmanCtrl as Hangman',
+                templateUrl: '/cache/games/hangman/new.html'
+            })
+             .state('app.master.hangman-game-lobby', {
+                url: '/hangman/:room/lobby',
+                title: 'Hangman | Lobby',
+                controller: 'HangmanCtrl as Hangman',
+                templateUrl: '/cache/games/hangman/game_lobby.html'
+            })
             .state('app.master.profile', {
                 url: '/profile',
                 title: 'Profile',

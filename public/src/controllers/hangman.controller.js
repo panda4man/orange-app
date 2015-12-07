@@ -5,17 +5,26 @@
         .module('orange.controller.hangman', [])
         .controller('HangmanCtrl', Controller);
 
-    Controller.$inject = ['$scope', 'SocketFactory', 'HangmanFactory']
+    Controller.$inject = ['$scope', '$state', '$timeout', 'SocketFactory', 'HangmanFactory']
 
-    function Controller($scope, socket, HangmanFactory) {
+    function Controller($scope, $state, $timeout, socket, HangmanFactory) {
         var vm = this;
         init();
         function init() {
             console.log('Loading the chat controller');
             vm.data = {
                 socket: socket.hangman(),
-                games: []
+                games: [],
+                forms: {
+                    create: {
+                        status: 'created'
+                    }
+                }
             };
+
+            $timeout(function () {
+                vm.data.forms.create.owner = $scope.session.current_user.id;
+            }, 50);
 
             vm.data.socket.on('game:error', function (error){
                 console.log(error);
@@ -23,6 +32,7 @@
 
             vm.data.socket.on('game:created', function (game){
                 console.log(game);
+                $state.go('app.master.hangman-game-lobby', {room: game.room});
             });
 
             setTimeout(function () {
@@ -37,56 +47,8 @@
             });
         }
 
-        vm.joinTest = function () {
-            vm.data.socket.emit('join');
+        vm.create = function () {
+            vm.data.socket.emit('create', vm.data.forms.create);
         };
-
-        var typingTimer;
-        var typing = false;
-        var doneTypingInterval = 1000;
-        var $input = $('#m');
-
-        $(document).ready(function() {
-            $(document).keypress(function(e) {
-                if (e.which == 13) {
-                    doneTyping();
-                }
-            });
-            $('form').submit(function() {
-                vm.data.socket.emit('game:message', $('#m').val());
-                $('#m').val('');
-                return false;
-            });
-
-            vm.data.socket.on('game:message', function(msg) {
-                $('#messages').append($('<li>').text(msg));
-            });
-
-            vm.data.socket.on('game:typing', function() {
-                $('#typing').text('A user is typing');
-            });
-
-            vm.data.socket.on('game:typing-stopped', function() {
-                $('#typing').text('');
-            });
-
-            //on keyup, start the countdown
-            $('#m').keyup(function() {
-                clearTimeout(typingTimer);
-                vm.data.socket.emit('game:typing');
-                typingTimer = setTimeout(doneTyping, doneTypingInterval);
-            });
-
-            //on keydown, clear the countdown 
-            $('#m').keydown(function() {
-                vm.data.socket.emit('game:typing');
-                clearTimeout(typingTimer);
-            });
-
-            //user is "finished typing," do something
-            function doneTyping() {
-                vm.data.socket.emit('game:typing-stopped');
-            }
-        });
     }
 })();

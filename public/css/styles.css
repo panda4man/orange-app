@@ -10955,3 +10955,8 @@ body {
   padding: 1px 10px;
   margin-bottom: 0; }
 
+.btn-fixed {
+  position: fixed;
+  right: 20px;
+  bottom: 60px; }
+
