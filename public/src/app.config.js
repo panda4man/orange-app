@@ -37,21 +37,27 @@
             })
             .state('app.master.hangman', {
                 url: '/hangman',
-                title: 'Hangman',
+                abstract: true,
                 controller: 'HangmanCtrl as Hangman',
+                template: '<div ui-view></div>'
+            })
+            .state('app.master.hangman.index', {
+                url: '/',
+                title: 'Hangman',
+                controller: 'HangmanIndexCtrl as Hangman',
                 templateUrl: '/cache/games/hangman/index.html'
             })
-            .state('app.master.hangman-new', {
-                url: '/hangman/new',
-                title: 'Hangman | new',
-                controller: 'HangmanCtrl as Hangman',
-                templateUrl: '/cache/games/hangman/new.html'
+            .state('app.master.hangman.create', {
+                url: '/create',
+                title: 'Hangman | create',
+                controller: 'HangmanCreateCtrl as Hangman',
+                templateUrl: '/cache/games/hangman/create.html'
             })
-             .state('app.master.hangman-game-lobby', {
-                url: '/hangman/:room/lobby',
+             .state('app.master.hangman.lobby', {
+                url: '/:room/lobby',
                 title: 'Hangman | Lobby',
-                controller: 'HangmanCtrl as Hangman',
-                templateUrl: '/cache/games/hangman/game_lobby.html'
+                controller: 'HangmanLobbyCtrl as Hangman',
+                templateUrl: '/cache/games/hangman/lobby.html'
             })
             .state('app.master.profile', {
                 url: '/profile',
