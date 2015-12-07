@@ -2,53 +2,29 @@
     'use strict';
 
     angular
-        .module('orange.controller.hangman', [])
+        .module('orange.controller.hangman.base', [])
         .controller('HangmanCtrl', Controller);
 
-    Controller.$inject = ['$scope', '$state', '$timeout', 'SocketFactory', 'HangmanFactory']
+    Controller.$inject = ['$scope', '$state', '$timeout', 'SocketFactory']
 
-    function Controller($scope, $state, $timeout, socket, HangmanFactory) {
+    function Controller($scope, $state, $timeout, socket) {
         var vm = this;
         init();
         function init() {
             console.log('Loading the chat controller');
-            vm.data = {
-                socket: socket.hangman(),
-                games: [],
-                forms: {
-                    create: {
-                        status: 'created'
-                    }
-                }
-            };
-
-            $timeout(function () {
-                vm.data.forms.create.owner = $scope.session.current_user.id;
-            }, 50);
-
-            vm.data.socket.on('game:error', function (error){
+            $scope.socket = socket.hangman();
+            
+            $scope.socket.on('game:error', function (error){
                 console.log(error);
             });
 
-            vm.data.socket.on('game:created', function (game){
-                console.log(game);
-                $state.go('app.master.hangman-game-lobby', {room: game.room});
+            $scope.socket.on('game:joined', function (data){
+                console.log('Someone joined: ' + JSON.stringify(data));
             });
 
-            setTimeout(function () {
-                //vm.data.socket.emit('create', {player_limit: 3, room: 'test1', status: 'created', owner: $scope.session.current_user.id});
-                vm.data.socket.emit('join', $scope.session.current_user, 'test1');
-            }, 3000);
-
-            HangmanFactory.all().then(function (games){
-                vm.data.games = games;
-            }, function (){
-
-            });
+            $scope.socket.on('game:left', function (data){
+                console.log('Someone left ' + JSON.stringify(data));
+            })
         }
-
-        vm.create = function () {
-            vm.data.socket.emit('create', vm.data.forms.create);
-        };
     }
 })();
