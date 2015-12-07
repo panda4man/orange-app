@@ -2,10 +2,12 @@
 <div class="card-panel light-blue lighten-3" ng-repeat="game in Hangman.data.games">
     <div class="row">
         <div class="col s12">
+        	<p>Game id: {{game.id}}</p>
         	<p>Room Name: {{game.room}}</p>
         	<p>Owner: {{game.owner.full_name}}</p>
         	<p ng-repeat="player in game.players">{{$index+1}}: {{player.full_name}}</p>
+        	<a ui-sref="app.master.hangman.lobby({room: game.room})">Enter</a>
         </div>
     </div>
 </div>
-<a ui-sref="app.master.hangman-new" class="btn-fixed btn-floating btn-large waves-effect waves-light red"><i class="md mdi-action-favorite"></i></a>
+<a ui-sref="app.master.hangman.create" class="btn-fixed btn-floating btn-large waves-effect waves-light red"><i class="md mdi-action-favorite"></i></a>
