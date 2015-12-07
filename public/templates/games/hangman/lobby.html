@@ -1,3 +1,12 @@
 <div class="row">
-	<div class="col s12">{{session.current_user | json}}</div>
+    <div class="col s6">
+        <div class="card-panel light-blue" ng-if="Hangman.data.game">
+            <h2>Current Players</h2>
+            <h4>Owner => {{Hangman.data.game.owner.full_name}}</h4>
+            <p ng-repeat="player in Hangman.data.game.players">{{player.full_name}}</p>
+        </div>
+    </div>
+    <div class="col s6">
+        <div class="card-panel light-blue"></div>
+    </div>
 </div>

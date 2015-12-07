@@ -4,6 +4,7 @@
         <div class="col s12">
         	<p>Game id: {{game.id}}</p>
         	<p>Room Name: {{game.room}}</p>
+        	<p>Player Limit: {{game.player_limit}}</p>
         	<p>Owner: {{game.owner.full_name}}</p>
         	<p ng-repeat="player in game.players">{{$index+1}}: {{player.full_name}}</p>
         	<a ui-sref="app.master.hangman.lobby({room: game.room})">Enter</a>
