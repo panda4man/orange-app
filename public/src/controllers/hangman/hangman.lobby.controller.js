@@ -18,9 +18,23 @@
                 game: null
             };
 
+            //On page load send a join event to server with current user and game room
+            //I think we should change this to an event we emit on button click
+            //on the hangman.index view...
             $scope.socket.emit('join', $scope.session.current_user, $stateParams.room);
     	}
 
+        vm.ready = function () {
+            //TO DO
+            //Handle user clicking the ready button to signal they are good to go
+        };
+
+        vm.notReady = function () {
+            //TO DO
+            //Handle user clicking the not ready button to signal they need more time
+        };
+
+        //Listeners
         $scope.socket.on('game:joined', function (data){
             console.log('%s just joined the game!', data.player.full_name);
             vm.data.game = data.game;
