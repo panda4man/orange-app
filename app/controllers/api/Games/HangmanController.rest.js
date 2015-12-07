@@ -13,6 +13,17 @@ router.get('/', function(req, res) {
     });
 });
 
+router.get('/:id', function (req, res){
+    Hangman.findById(rq.params.id, function (err, game){
+        if(err) return res.status(400).json(err);
+
+        res.status(200).json({
+            success: true,
+            data: game
+        });
+    });
+});
+
 router.delete('/:id', function(req, res) {
     Hangman.findById(req.params.id, function(err, game) {
         if (err) return res.status(400).json(err);
