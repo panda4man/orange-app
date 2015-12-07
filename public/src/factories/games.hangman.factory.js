@@ -25,5 +25,16 @@
 
     		return deferred.promise;
     	}
+
+        function show (id) {
+           var deferred = $q.defer();
+            $http.get(Config.baseUrl + 'api/games/hangman/' + id).success(function (res){
+                deferred.resolve(res.data);
+            }).error(function (err){
+                deferred.reject();
+            });
+
+            return deferred.promise; 
+        }
     }
 })();
