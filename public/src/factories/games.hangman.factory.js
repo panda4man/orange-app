@@ -17,7 +17,6 @@
     	function all () {
     		var deferred = $q.defer();
     		$http.get(Config.baseUrl + 'api/games/hangman').success(function (res){
-    			console.log(res);
     			deferred.resolve(res.data);
     		}).error(function (err){
     			console.log(err);
