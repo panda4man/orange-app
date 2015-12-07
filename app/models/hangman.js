@@ -47,9 +47,20 @@ GameSchema.methods.fill = function(data) {
     this.status = data.status;
     this.player_limit = data.player_limit;
     if(data.players && data.players.length){
-        console.log('saving players in fill method');
         this.players = data.players;
     }
+};
+
+GameSchema.methods.isPlaying = function (player){
+    var x = 0;
+    var _player = null;
+    for(x; x < this.players.length; x++){
+        _player = this.players[x];
+        if(_player.id == player.id){
+            return true;
+        }
+    }
+    return false;
 };
 
 GameSchema.methods.addPlayer = function(player) {
@@ -57,14 +68,19 @@ GameSchema.methods.addPlayer = function(player) {
         this.players.push(mongoose.Types.ObjectId(player.id));
     else
         this.players.push(mongoose.Types.ObjectId(player));
-}
+};
 
 GameSchema.methods.removePlayer = function(player) {
-    var i = this.players.indexOf(player.id);
-    if (i != -1) {
-        this.players.splice(i, 1);
+    this.players = this.players.filter(function (pl){
+        return pl.id != player.id;
+    });
+
+    //if player who is leaving is owner
+    //assign new owner
+    if(player.id == this.owner.id){
+        this.owner = this.players[0]._id;
     }
-}
+};
 
 /**
  * Handle the foreign key references

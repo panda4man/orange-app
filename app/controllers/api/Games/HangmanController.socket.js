@@ -29,10 +29,9 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
     socket.on('join', function(player, game) {
         loading(endpoint, socket, false, true, '');
         console.log('%s is trying to join %s', player.id, game);
-        Hangman.find({
+        Hangman.findOne({
             room: game
         }).populate('players').populate('owner').exec(function(err, game) {
-            var game = game[0];
             if (err) {
                 loading(endpoint, socket, false, false, '');
                 errors.hangman(socket, err);
@@ -43,9 +42,8 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
                     errors.hangman(socket, 'No available player slots.');
                 } else {
                     //add player to players list
-                    if (game.players.indexOf(player.id) < 0){
-                        console.log('found someone not in the game yet :)');
-                        console.log(player.id);
+                    if (!game.isPlaying(player)) {
+                        console.log('found someone not in the game yet: %s', player.id);
                         game.addPlayer(player);
                     }
 
@@ -62,7 +60,10 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
                             socket.join(game.room);
 
                             //let everyone already in the game know that someone joined
-                            socket.broadcast.to(game.room).emit('game:joined', {player: player, game: game});
+                            socket.broadcast.to(game.room).emit('game:joined', {
+                                player: player,
+                                game: game
+                            });
                         }
                     });
                 }
@@ -73,48 +74,55 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
     socket.on('leave', function(player, game) {
         console.log('%s is leaving the game %s', player.id, game);
         loading(endpoint, socket, false, true, '');
-        Hangman.find({room: game}).populate('players').exec(function(err, game) {
+        Hangman.findOne({
+            room: game
+        }).populate('players').populate('owner').exec(function(err, game) {
             if (err) {
                 loading(endpoint, socket, false, false, '');
                 errors.hangman(socket, err);
             } else {
-                var game = game[0];
                 if (game) {
-                    //remove player from game player id list
-                    game.removePlayer(player);
-                    game.save(function(err) {
-                        if (err) {
-                            loading(endpoint, socket, false, false, '');
-                            errors.hangman(socket, err);
-                        } else {
-                            loading(endpoint, socket, false, false, '');
+                    //If only one player left then we need to remove game
+                    if (game.players.length == 1) {
+                        game.remove(function (err){
+                            if(err){
+                                loading(endpoint, socket, false, false, '');
+                                errors.hangman(socket, err);
+                            } else {
+                                loading(endpoint, socket, false, false, '');
 
-                            //disconnect from room
-                            socket.leave(game.room);
+                                //disconnect from room
+                                socket.leave(game.room);
 
-                            //tell everyone of the disconnection
-                            socket.broadcast.to(game.room).emit('game:left', player);
-                        }
-                    });
+                                //tell everyone in this namespace that the game
+                                //ended
+                                endpoint.emit('game:ended');
+                            }
+                        });
+                    } else {
+                        //remove player from game player id list
+                        game.removePlayer(player);
+
+                        game.save(function(err) {
+                            if (err) {
+                                loading(endpoint, socket, false, false, '');
+                                errors.hangman(socket, err);
+                            } else {
+                                loading(endpoint, socket, false, false, '');
+
+                                //disconnect from room
+                                socket.leave(game.room);
+
+                                //tell everyone in room of the disconnection
+                                socket.broadcast.to(game.room).emit('game:leave', {
+                                    player: player,
+                                    game: game
+                                });
+                            }
+                        });
+                    }
                 }
             }
         });
     });
-
-    socket.on('game:typing', function() {
-        socket.broadcast.emit('game:typing');
-    });
-    socket.on('game:typing-stopped', function() {
-        socket.broadcast.emit('game:typing-stopped');
-    });
-    socket.on('game:message', function(msg) {
-        console.log('message: ' + msg);
-        socket.broadcast.emit('game:message', msg);
-    });
-    socket.on('disconnect', function() {
-        console.log('user disconnected');
-    });
-
-    //Emitters
-    socket.emit('welcome', 'Welcome to Orange Gaming!');
 }
