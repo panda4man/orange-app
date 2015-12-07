@@ -28,6 +28,7 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
 
     socket.on('join', function(player, game) {
         loading(endpoint, socket, false, true, '');
+        console.log('%s is trying to join %s', player.id, game);
         Hangman.find({
             room: game
         }).populate('players').populate('owner').exec(function(err, game) {
@@ -42,12 +43,16 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
                     errors.hangman(socket, 'No available player slots.');
                 } else {
                     //add player to players list
-                    if (game.players.indexOf(player.id) > -1)
+                    if (game.players.indexOf(player.id) < 0){
+                        console.log('found someone not in the game yet :)');
+                        console.log(player.id);
                         game.addPlayer(player);
+                    }
 
                     //save the game and send the socket a message
                     game.save(function(err) {
                         if (err) {
+                            console.log('error happened on join');
                             loading(endpoint, socket, false, false, '');
                             errors.hangman(socket, err);
                         } else {
@@ -57,7 +62,7 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
                             socket.join(game.room);
 
                             //let everyone already in the game know that someone joined
-                            socket.broadcast.to(game.room).emit('game:joined', player);
+                            socket.broadcast.to(game.room).emit('game:joined', {player: player, game: game});
                         }
                     });
                 }
@@ -66,12 +71,14 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
     });
 
     socket.on('leave', function(player, game) {
+        console.log('%s is leaving the game %s', player.id, game);
         loading(endpoint, socket, false, true, '');
-        Hangman.findById(game.id).populate('players').exec(function(err, game) {
+        Hangman.find({room: game}).populate('players').exec(function(err, game) {
             if (err) {
                 loading(endpoint, socket, false, false, '');
                 errors.hangman(socket, err);
             } else {
+                var game = game[0];
                 if (game) {
                     //remove player from game player id list
                     game.removePlayer(player);
