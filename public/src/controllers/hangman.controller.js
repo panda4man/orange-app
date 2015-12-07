@@ -9,9 +9,7 @@
 
     function Controller($scope, socket, HangmanFactory) {
         var vm = this;
-
         init();
-
         function init() {
             console.log('Loading the chat controller');
             vm.data = {
