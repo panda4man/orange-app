@@ -1,6 +1,6 @@
 var errors = require('../helpers/socketErrors');
 var loading = require('../helpers/socketLoading');
-var HangmanController = require('../controllers/api/HangmanController');
+var HangmanController = require('../controllers/api/Games/HangmanController.socket');
 
 /**
  * Register all socket namepaces

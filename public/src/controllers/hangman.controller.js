@@ -5,9 +5,9 @@
         .module('orange.controller.hangman', [])
         .controller('HangmanCtrl', Controller);
 
-    Controller.$inject = ['$scope', 'SocketFactory']
+    Controller.$inject = ['$scope', 'SocketFactory', 'HangmanFactory']
 
-    function Controller($scope, socket) {
+    function Controller($scope, socket, HangmanFactory) {
         var vm = this;
 
         init();
@@ -15,7 +15,8 @@
         function init() {
             console.log('Loading the chat controller');
             vm.data = {
-                socket: socket.hangman()
+                socket: socket.hangman(),
+                games: []
             };
 
             vm.data.socket.on('game:error', function (error){
@@ -27,8 +28,15 @@
             });
 
             setTimeout(function () {
-                vm.data.socket.emit('create', {player_limit: 3, room: 'test1', status: 'created', owner: $scope.session.current_user.id});
+                //vm.data.socket.emit('create', {player_limit: 3, room: 'test1', status: 'created', owner: $scope.session.current_user.id});
+                vm.data.socket.emit('join', $scope.session.current_user, 'test1');
             }, 3000);
+
+            HangmanFactory.all().then(function (games){
+                vm.data.games = games;
+            }, function (){
+
+            });
         }
 
         vm.joinTest = function () {

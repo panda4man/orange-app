@@ -1,5 +1,4 @@
-var _room, _id, _player;
-var Hangman = require('../../models/hangman');
+var Hangman = require('../../../models/hangman');
 
 module.exports.respond = function(endpoint, socket, errors, loading) {
     console.log('User connected: %s', socket.id);
@@ -30,7 +29,10 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
 
     socket.on('join', function(player, game) {
         loading(endpoint, socket, false, true, '');
-        Hangman.findByRoom(game.room).populate('players').exec(function(err, game) {
+        Hangman.find({
+            room: game
+        }).populate('players').populate('owner').exec(function(err, game) {
+            var game = game[0];
             if (err) {
                 loading(endpoint, socket, false, false, '');
                 errors.hangman(socket, err);
@@ -41,7 +43,8 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
                     errors.hangman(socket, 'No available player slots.');
                 } else {
                     //add player to players list
-                    game.addPlayer(player);
+                    if (game.players.indexOf(player.id) > -1)
+                        game.addPlayer(player);
 
                     //save the game and send the socket a message
                     game.save(function(err) {
@@ -66,15 +69,15 @@ module.exports.respond = function(endpoint, socket, errors, loading) {
     socket.on('leave', function(player, game) {
         loading(endpoint, socket, false, true, '');
         Hangman.findById(game.id).populate('players').exec(function(err, game) {
-            if(err) {
+            if (err) {
                 loading(endpoint, socket, false, false, '');
                 errors.hangman(socket, err);
             } else {
-                if(game){
+                if (game) {
                     //remove player from game player id list
                     game.removePlayer(player);
-                    game.save(function (err){
-                        if(err){
+                    game.save(function(err) {
+                        if (err) {
                             loading(endpoint, socket, false, false, '');
                             errors.hangman(socket, err);
                         } else {
