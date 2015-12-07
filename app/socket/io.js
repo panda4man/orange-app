@@ -1,23 +1,17 @@
+var errors = require('../helpers/socketErrors');
+var loading = require('../helpers/socketLoading');
+var HangmanController = require('../controllers/api/HangmanController');
+
+/**
+ * Register all socket namepaces
+ */
 module.exports = function(io) {
 	'use strict';
-    io.on('connection', function(socket) {
-        console.log('a user connected');
+    var hangman = io.of('/hangman').on('connection', function(socket) {
+        HangmanController.respond(hangman, socket, errors, loading);
+    });
 
-        socket.emit('welcome', 'Welcome to Orange Gaming!');
-
-        //listeners
-        socket.on('disconnect', function() {
-            console.log('user disconnected');
-        });
-        socket.on('chat:typing', function() {
-            socket.broadcast.emit('chat:typing');
-        });
-        socket.on('chat:typing-stopped', function() {
-            socket.broadcast.emit('chat:typing-stopped');
-        });
-        socket.on('chat:message', function(msg) {
-            console.log('message: ' + msg);
-            socket.broadcast.emit('chat:message', msg);
-        });
+    var blackjack = io.of('/blackjack').on('connection', function (socket){
+        //TO DO
     });
 };

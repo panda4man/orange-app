@@ -4,15 +4,22 @@
         .module('orange.factory.socket', [])
         .factory('SocketFactory', Factory);
 
-    Factory.$inject = ['socketFactory'];
+    Factory.$inject = ['SocketService'];
 
-    function Factory(socketFactory) {
-        var myIoSocket = io.connect('http://localhost:4200');
+    function Factory(SocketService) {
+        var factory = {
+            hangman: hangman,
+            blackjack: blackjack
+        };
 
-        var _mySocket = socketFactory({
-            ioSocket: myIoSocket
-        });
-        
-        return _mySocket;
+        return factory;
+
+        function hangman() {
+            return SocketService.create('hangman');
+        }
+
+        function blackjack () {
+            return SocketService.create('blackjack');
+        }
     }
 })();

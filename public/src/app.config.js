@@ -35,11 +35,11 @@
                 templateUrl: '/cache/layouts/simple.html',
                 abstract: true
             })
-            .state('app.master.chat', {
-                url: '/chat',
-                title: 'Chat',
-                controller: 'ChatCtrl as Base',
-                templateUrl: '/cache/chat.html'
+            .state('app.master.hangman', {
+                url: '/hangman',
+                title: 'Hangman',
+                controller: 'HangmanCtrl as Hangman',
+                templateUrl: '/cache/games/hangman/index.html'
             })
             .state('app.master.profile', {
                 url: '/profile',

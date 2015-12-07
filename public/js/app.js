@@ -7545,11 +7545,11 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
                 templateUrl: '/cache/layouts/simple.html',
                 abstract: true
             })
-            .state('app.master.chat', {
-                url: '/chat',
-                title: 'Chat',
-                controller: 'ChatCtrl as Base',
-                templateUrl: '/cache/chat.html'
+            .state('app.master.hangman', {
+                url: '/hangman',
+                title: 'Hangman',
+                controller: 'HangmanCtrl as Hangman',
+                templateUrl: '/cache/games/hangman/index.html'
             })
             .state('app.master.profile', {
                 url: '/profile',
@@ -7686,8 +7686,8 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
     'use strict';
 
     angular
-        .module('orange.controller.chat', [])
-        .controller('ChatCtrl', Controller);
+        .module('orange.controller.hangman', [])
+        .controller('HangmanCtrl', Controller);
 
     Controller.$inject = ['$scope', 'SocketFactory']
 
@@ -7698,7 +7698,26 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
         function init() {
             console.log('Loading the chat controller');
+            vm.data = {
+                socket: socket.hangman()
+            };
+
+            vm.data.socket.on('game:error', function (error){
+                console.log(error);
+            });
+
+            vm.data.socket.on('game:created', function (game){
+                console.log(game);
+            });
+
+            setTimeout(function () {
+                vm.data.socket.emit('create', {player_limit: 3, room: 'test1', status: 'created', owner: $scope.session.current_user.id});
+            }, 3000);
         }
+
+        vm.joinTest = function () {
+            vm.data.socket.emit('join');
+        };
 
         var typingTimer;
         var typing = false;
@@ -7712,39 +7731,39 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
                 }
             });
             $('form').submit(function() {
-                socket.emit('chat:message', $('#m').val());
+                vm.data.socket.emit('game:message', $('#m').val());
                 $('#m').val('');
                 return false;
             });
 
-            socket.on('chat:message', function(msg) {
+            vm.data.socket.on('game:message', function(msg) {
                 $('#messages').append($('<li>').text(msg));
             });
 
-            socket.on('chat:typing', function() {
+            vm.data.socket.on('game:typing', function() {
                 $('#typing').text('A user is typing');
             });
 
-            socket.on('chat:typing-stopped', function() {
+            vm.data.socket.on('game:typing-stopped', function() {
                 $('#typing').text('');
             });
 
             //on keyup, start the countdown
             $('#m').keyup(function() {
                 clearTimeout(typingTimer);
-                socket.emit('chat:typing');
+                vm.data.socket.emit('game:typing');
                 typingTimer = setTimeout(doneTyping, doneTypingInterval);
             });
 
             //on keydown, clear the countdown 
             $('#m').keydown(function() {
-                socket.emit('chat:typing');
+                vm.data.socket.emit('game:typing');
                 clearTimeout(typingTimer);
             });
 
             //user is "finished typing," do something
             function doneTyping() {
-                socket.emit('chat:typing-stopped');
+                vm.data.socket.emit('game:typing-stopped');
             }
         });
     }
@@ -7752,7 +7771,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
 (function() {
     'use strict';
-    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.chat', 'orange.controller.profile', 'orange.controller.register']);
+    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.hangman', 'orange.controller.profile', 'orange.controller.register']);
 })();
 
 (function() {
@@ -7957,16 +7976,23 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
         .module('orange.factory.socket', [])
         .factory('SocketFactory', Factory);
 
-    Factory.$inject = ['socketFactory'];
+    Factory.$inject = ['SocketService'];
 
-    function Factory(socketFactory) {
-        var myIoSocket = io.connect('http://localhost:4200');
+    function Factory(SocketService) {
+        var factory = {
+            hangman: hangman,
+            blackjack: blackjack
+        };
 
-        var _mySocket = socketFactory({
-            ioSocket: myIoSocket
-        });
-        
-        return _mySocket;
+        return factory;
+
+        function hangman() {
+            return SocketService.create('hangman');
+        }
+
+        function blackjack () {
+            return SocketService.create('blackjack');
+        }
     }
 })();
 
@@ -8083,7 +8109,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
 (function() {
     'use strict';
-    angular.module('orange.services', ['orange.service.jwt', 'orange.service.sessions', 'orange.service.form_errors']);
+    angular.module('orange.services', ['orange.service.jwt', 'orange.service.sessions', 'orange.service.form_errors', 'orange.service.socket']);
 })();
 
 ;(function () {
@@ -8119,11 +8145,32 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 		}
 	}
 })();
+(function() {
+    'use strict';
+
+    angular
+        .module('orange.service.socket', [])
+        .service('SocketService', Service);
+
+    Service.$inject = ["socketFactory"];
+
+    function Service(socketFactory) {
+        this.create = function(namespace) {
+            var socket = io.connect('http://localhost:4200/' + namespace);
+
+            return socketFactory({
+                ioSocket: socket
+            });
+        }
+    }
+})();
+
 angular.module("orange.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("/cache/chat.html","<ul id=messages></ul><div id=typing></div><div class=row><form class=\"col s12\"><div class=row><div class=\"input-field col s12\"><input id=m type=text class=validate> <label for=first_name>Message</label></div></div><button type=submit class=\"btn waves-effect\">Send</button></form></div>");
 $templateCache.put("/cache/games/index.html","");
 $templateCache.put("/cache/includes/_nav.html","<div class=navbar-fixed><nav><div class=nav-wrapper><a href=#! class=brand-logo>Logo</a><ul class=\"right hide-on-med-and-down\"><li><a href=sass.html>Sass</a></li><li><a href=badges.html>Components</a></li></ul></div></nav></div>");
-$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li ng-if=session.logged_in><a ui-sref=app.master.chat>Chat</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.full_name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=\"container full-width\"><div class=row><div class=\"col s12\" id=content ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div><div class=row><div class=\"col s12\"><p>Don\'t have an account? That\'s alright, register here :)</p><button class=\"btn pink waves-effect\" ng-click=register()>Register</button></div></div></div></div>");
+$templateCache.put("/cache/layouts/master.html","<div class=navbar-fixed><ul id=dropdown1 class=dropdown-content><li><a ui-sref=app.master.profile>profile</a></li><li class=divider></li><li><a href=\"\" ng-click=logout()>Logout</a></li></ul><nav><div class=nav-wrapper><a href=# class=brand-logo>{{config.siteName}}</a><ul id=nav-mobile class=\"right hide-on-med-and-down\"><li ng-if=session.logged_in><a ui-sref=app.master.hangman>Hangman</a></li><li><a class=dropdown-button href=#! data-activates=dropdown1>{{session.current_user.full_name}}<i class=\"material-icons right\"></i></a></li></ul></div></nav></div><div class=\"container full-width\"><div class=row><div class=\"col s12\" id=content ui-view=\"\"></div></div></div><div id=login class=modal><div class=modal-content><h4>Login</h4><div class=row><form class=\"col s12\" ng-submit=login()><div class=row><div class=\"input-field col s12\"><input ng-model=Base.data.forms.login.username id=username type=text class=validate> <label for=first_name>Username</label></div><div class=\"input-field col s12\"><input id=last_name type=password ng-model=Base.data.forms.login.password class=validate> <label for=last_name>Password</label></div></div><button class=\"btn waves-effect\" type=submit>Login</button></form></div><div class=row><div class=\"col s12\"><p>Don\'t have an account? That\'s alright, register here :)</p><button class=\"btn pink waves-effect\" ng-click=register()>Register</button></div></div></div></div>");
 $templateCache.put("/cache/layouts/simple.html","<div class=container><div class=row><div class=\"col s12\" ui-view=\"\"></div></div></div>");
 $templateCache.put("/cache/profile/edit.html","<div class=\"card-panel light-blue lighten-3\"><div class=row><form class=\"col s12\" ng-submit=Profile.update()><div class=row><div class=\"input-field col s6\"><input ng-model=session.current_user.name.first id=first_name type=text class=validate> <label class=white-text for=first_name>First Name</label><div ng-if=errorCollection.errors.first_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.first_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div><div class=\"input-field col s6\"><input ng-model=session.current_user.name.last id=last_name type=text class=validate> <label class=white-text for=last_name>Last Name</label><div ng-if=errorCollection.errors.last_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.last_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.username id=username type=text class=validate> <label class=white-text for=username>Username</label><div ng-if=errorCollection.errors.username class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.username\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.email id=email type=email class=validate> <label class=white-text for=email>Email</label><div ng-if=errorCollection.errors.email class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.email\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.age id=age type=tel class=validate> <label class=white-text for=age>Age</label><div ng-if=errorCollection.errors.age class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.age\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=session.current_user.password id=password type=password class=validate> <label class=white-text for=password>Password</label><div ng-if=errorCollection.errors.password class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.password\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><button class=\"btn pink waves-effect\" type=submit>Update</button></form></div></div>");
 $templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s8 offset-s2\"><div class=\"card-panel light-blue lighten-3\"><div class=section><span class=white-text><p><b>Name</b>: {{session.current_user.full_name}}</p><p><b>Username</b>: {{session.current_user.username}}</p><p><b>Email</b>: {{session.current_user.email}}</p><p><b>Age</b>: {{session.current_user.age}}</p></span></div><div class=divider></div><div class=section><button class=\"btn pink lighten-2 waves-effect\" ui-sref=app.master.profile-edit>Edit</button></div></div></div></div>");
-$templateCache.put("/cache/sessions/register.html","<div class=\"card-panel light-blue lighten-3\"><h2>Register</h2><div class=row><form class=\"col s12\" ng-submit=Register.register()><div class=row><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.first id=first_name type=text class=validate> <label class=white-text for=first_name>First Name</label><div ng-if=errorCollection.errors.first_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.first_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.last id=last_name type=text class=validate> <label class=white-text for=last_name>Last Name</label><div ng-if=errorCollection.errors.last_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.last_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.username id=username type=text class=validate> <label class=white-text for=username>Username</label><div ng-if=errorCollection.errors.username class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.username\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.password id=password type=password class=validate> <label class=white-text for=password>Password</label><div ng-if=errorCollection.errors.password class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.password\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.email id=email type=email class=validate> <label class=white-text for=email>Email</label><div ng-if=errorCollection.errors.email class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.email\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><button type=submit class=\"btn blue waves-effect\">Get Started</button></form></div></div>");}]);
+$templateCache.put("/cache/sessions/register.html","<div class=\"card-panel light-blue lighten-3\"><h2>Register</h2><div class=row><form class=\"col s12\" ng-submit=Register.register()><div class=row><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.first id=first_name type=text class=validate> <label class=white-text for=first_name>First Name</label><div ng-if=errorCollection.errors.first_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.first_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.last id=last_name type=text class=validate> <label class=white-text for=last_name>Last Name</label><div ng-if=errorCollection.errors.last_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.last_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.username id=username type=text class=validate> <label class=white-text for=username>Username</label><div ng-if=errorCollection.errors.username class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.username\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.password id=password type=password class=validate> <label class=white-text for=password>Password</label><div ng-if=errorCollection.errors.password class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.password\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.email id=email type=email class=validate> <label class=white-text for=email>Email</label><div ng-if=errorCollection.errors.email class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.email\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><button type=submit class=\"btn blue waves-effect\">Get Started</button></form></div></div>");
+$templateCache.put("/cache/games/hangman/index.html","index here!");}]);

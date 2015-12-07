@@ -2,8 +2,8 @@
     'use strict';
 
     angular
-        .module('orange.controller.chat', [])
-        .controller('ChatCtrl', Controller);
+        .module('orange.controller.hangman', [])
+        .controller('HangmanCtrl', Controller);
 
     Controller.$inject = ['$scope', 'SocketFactory']
 
@@ -14,7 +14,26 @@
 
         function init() {
             console.log('Loading the chat controller');
+            vm.data = {
+                socket: socket.hangman()
+            };
+
+            vm.data.socket.on('game:error', function (error){
+                console.log(error);
+            });
+
+            vm.data.socket.on('game:created', function (game){
+                console.log(game);
+            });
+
+            setTimeout(function () {
+                vm.data.socket.emit('create', {player_limit: 3, room: 'test1', status: 'created', owner: $scope.session.current_user.id});
+            }, 3000);
         }
+
+        vm.joinTest = function () {
+            vm.data.socket.emit('join');
+        };
 
         var typingTimer;
         var typing = false;
@@ -28,39 +47,39 @@
                 }
             });
             $('form').submit(function() {
-                socket.emit('chat:message', $('#m').val());
+                vm.data.socket.emit('game:message', $('#m').val());
                 $('#m').val('');
                 return false;
             });
 
-            socket.on('chat:message', function(msg) {
+            vm.data.socket.on('game:message', function(msg) {
                 $('#messages').append($('<li>').text(msg));
             });
 
-            socket.on('chat:typing', function() {
+            vm.data.socket.on('game:typing', function() {
                 $('#typing').text('A user is typing');
             });
 
-            socket.on('chat:typing-stopped', function() {
+            vm.data.socket.on('game:typing-stopped', function() {
                 $('#typing').text('');
             });
 
             //on keyup, start the countdown
             $('#m').keyup(function() {
                 clearTimeout(typingTimer);
-                socket.emit('chat:typing');
+                vm.data.socket.emit('game:typing');
                 typingTimer = setTimeout(doneTyping, doneTypingInterval);
             });
 
             //on keydown, clear the countdown 
             $('#m').keydown(function() {
-                socket.emit('chat:typing');
+                vm.data.socket.emit('game:typing');
                 clearTimeout(typingTimer);
             });
 
             //user is "finished typing," do something
             function doneTyping() {
-                socket.emit('chat:typing-stopped');
+                vm.data.socket.emit('game:typing-stopped');
             }
         });
     }
