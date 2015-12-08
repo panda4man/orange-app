@@ -7629,6 +7629,237 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
 (function() {
     'use strict';
+
+    angular
+        .module('orange.factory.errors', [])
+        .factory('ErrorsFactory', Factory);
+
+    Factory.$inject = ['FormErrorsService'];
+
+    function Factory(FormErrorsService) {
+    	var _data = {
+    		errors: null
+    	};
+
+    	var factory = {
+    		errorCollection: _data,
+            registration: registration,
+            clear: clear
+    	};
+
+        return factory;
+
+    	function registration (errors) {
+    		_data.errors = FormErrorsService.format(errors);
+            console.log(_data.errors);
+    	}
+
+        function clear () {
+            _data.errors = null;
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orange.factory.games.hangman', [])
+        .factory('HangmanFactory', Factory);
+
+    Factory.$inject = ['$http', '$q', 'Config'];
+
+    function Factory($http, $q, Config) {
+    	var factory = {
+    		all: all
+    	};
+
+    	return factory;
+
+    	function all () {
+    		var deferred = $q.defer();
+    		$http.get(Config.baseUrl + 'api/games/hangman').success(function (res){
+    			deferred.resolve(res.data);
+    		}).error(function (err){
+    			console.log(err);
+    			deferred.reject();
+    		});
+
+    		return deferred.promise;
+    	}
+
+        function show (id) {
+           var deferred = $q.defer();
+            $http.get(Config.baseUrl + 'api/games/hangman/' + id).success(function (res){
+                deferred.resolve(res.data);
+            }).error(function (err){
+                deferred.reject();
+            });
+
+            return deferred.promise; 
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+    angular.module('orange.factories', ['orange.factory.socket', 'orange.factory.sessions', 'orange.factory.errors', 'orange.factory.users', 'orange.factory.games.hangman']);
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.factory.sessions', [])
+        .factory('SessionsFactory', Factory);
+
+    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService', 'ErrorsFactory'];
+
+    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session, ErrorsFactory) {
+        var _sessionData = {
+            session: {
+                current_user: null,
+                logged_in: false
+            }
+        };
+        var factory = {
+            login: login,
+            logout: logout,
+            profile: profile,
+            register: register,
+            session: _sessionData,
+            create: create
+        };
+
+        return factory;
+
+        function create (user) {
+            Session.create(_sessionData, user);
+        }
+
+        function login(data) {
+            var deferred = $q.defer();
+            var config = {
+                ignoreAuthModule: true
+            };
+            $auth.login(data, config).then(function(res) {
+                Session.create(_sessionData, res.data.user);
+                deferred.resolve();
+            }).catch(function(err) {
+                deferred.reject(err);
+            });
+            return deferred.promise;
+        }
+
+        function logout () {
+            $auth.logout();
+            Session.destroy(_sessionData);
+        }
+
+        function profile() {
+            var current_user = localStorage.getItem('current_user');
+
+            var deferred = $q.defer();
+
+            if (current_user === 'null' || current_user === null || current_user === undefined || current_user === 'undefined') {
+                $timeout(function () {
+                    $rootScope.$broadcast('event:auth-loginRequired');
+                }, 1);
+                deferred.reject();
+            } else {
+                current_user = JSON.parse(current_user);
+                $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
+                    Session.create(_sessionData, res.data);
+                    deferred.resolve();
+                }).error(function(err) {
+                    deferred.reject(err);
+                });
+            }
+
+            return deferred.promise;
+        }
+
+        function register (data) {
+            var deferred = $q.defer();
+
+            $http({
+                method: 'POST',
+                url: Config.baseUrl + 'sessions/sign-up',
+                data: data
+            }).success(function (res){
+                Session.create(_sessionData, res.user, res.token);
+                deferred.resolve();
+            }).error(function (err){
+                ErrorsFactory.registration(err);
+                deferred.reject();
+            });
+
+            return deferred.promise;
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.factory.socket', [])
+        .factory('SocketFactory', Factory);
+
+    Factory.$inject = ['SocketService'];
+
+    function Factory(SocketService) {
+        var factory = {
+            hangman: hangman,
+            blackjack: blackjack
+        };
+
+        return factory;
+
+        function hangman() {
+            return SocketService.create('hangman');
+        }
+
+        function blackjack () {
+            return SocketService.create('blackjack');
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orange.factory.users', [])
+        .factory('UsersFactory', Factory);
+
+    Factory.$inject = ['$http', '$q', 'Config', 'SessionsFactory'];
+
+    function Factory($http, $q, Config, SessionsFactory) {
+    	var factory = {
+    		update: update
+    	};
+
+    	return factory;
+
+    	function update (data) {
+            var deferred = $q.defer();
+            $http({
+                method: 'PUT',
+                url: Config.baseUrl + 'api/users/' + data.id,
+                data: data
+            }).success(function (res){
+            	SessionsFactory.create(res.data);
+            	deferred.resolve();
+            }).error(function (err){
+            	console.log(err);
+            	deferred.reject();
+            });
+            return deferred.promise;
+        }
+    }
+})();
+
+(function() {
+    'use strict';
     angular
         .module('orange.controller.base', [])
         .controller('BaseCtrl', Controller);
@@ -7798,226 +8029,6 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
             }, function() {
 
             });
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orange.factory.errors', [])
-        .factory('ErrorsFactory', Factory);
-
-    Factory.$inject = ['FormErrorsService'];
-
-    function Factory(FormErrorsService) {
-    	var _data = {
-    		errors: null
-    	};
-
-    	var factory = {
-    		errorCollection: _data,
-            registration: registration,
-            clear: clear
-    	};
-
-        return factory;
-
-    	function registration (errors) {
-    		_data.errors = FormErrorsService.format(errors);
-            console.log(_data.errors);
-    	}
-
-        function clear () {
-            _data.errors = null;
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orange.factory.games.hangman', [])
-        .factory('HangmanFactory', Factory);
-
-    Factory.$inject = ['$http', '$q', 'Config'];
-
-    function Factory($http, $q, Config) {
-    	var factory = {
-    		all: all
-    	};
-
-    	return factory;
-
-    	function all () {
-    		var deferred = $q.defer();
-    		$http.get(Config.baseUrl + 'api/games/hangman').success(function (res){
-    			deferred.resolve(res.data);
-    		}).error(function (err){
-    			console.log(err);
-    			deferred.reject();
-    		});
-
-    		return deferred.promise;
-    	}
-    }
-})();
-
-(function() {
-    'use strict';
-    angular.module('orange.factories', ['orange.factory.socket', 'orange.factory.sessions', 'orange.factory.errors', 'orange.factory.users', 'orange.factory.games.hangman']);
-})();
-
-(function() {
-    'use strict';
-    angular
-        .module('orange.factory.sessions', [])
-        .factory('SessionsFactory', Factory);
-
-    Factory.$inject = ['$http', '$timeout', '$rootScope', '$q', '$auth', 'Config', 'JWTService', 'SessionsService', 'ErrorsFactory'];
-
-    function Factory($http, $timeout, $rootScope, $q, $auth, Config, Jwt, Session, ErrorsFactory) {
-        var _sessionData = {
-            session: {
-                current_user: null,
-                logged_in: false
-            }
-        };
-        var factory = {
-            login: login,
-            logout: logout,
-            profile: profile,
-            register: register,
-            session: _sessionData,
-            create: create
-        };
-
-        return factory;
-
-        function create (user) {
-            Session.create(_sessionData, user);
-        }
-
-        function login(data) {
-            var deferred = $q.defer();
-            var config = {
-                ignoreAuthModule: true
-            };
-            $auth.login(data, config).then(function(res) {
-                Session.create(_sessionData, res.data.user);
-                deferred.resolve();
-            }).catch(function(err) {
-                deferred.reject(err);
-            });
-            return deferred.promise;
-        }
-
-        function logout () {
-            $auth.logout();
-            Session.destroy(_sessionData);
-        }
-
-        function profile() {
-            var current_user = localStorage.getItem('current_user');
-
-            var deferred = $q.defer();
-
-            if (current_user === 'null' || current_user === null || current_user === undefined || current_user === 'undefined') {
-                $timeout(function () {
-                    $rootScope.$broadcast('event:auth-loginRequired');
-                }, 1);
-                deferred.reject();
-            } else {
-                current_user = JSON.parse(current_user);
-                $http.get(Config.baseUrl + 'api/users/' + current_user.id).success(function(res) {
-                    Session.create(_sessionData, res.data);
-                    deferred.resolve();
-                }).error(function(err) {
-                    deferred.reject(err);
-                });
-            }
-
-            return deferred.promise;
-        }
-
-        function register (data) {
-            var deferred = $q.defer();
-
-            $http({
-                method: 'POST',
-                url: Config.baseUrl + 'sessions/sign-up',
-                data: data
-            }).success(function (res){
-                Session.create(_sessionData, res.user, res.token);
-                deferred.resolve();
-            }).error(function (err){
-                ErrorsFactory.registration(err);
-                deferred.reject();
-            });
-
-            return deferred.promise;
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-    angular
-        .module('orange.factory.socket', [])
-        .factory('SocketFactory', Factory);
-
-    Factory.$inject = ['SocketService'];
-
-    function Factory(SocketService) {
-        var factory = {
-            hangman: hangman,
-            blackjack: blackjack
-        };
-
-        return factory;
-
-        function hangman() {
-            return SocketService.create('hangman');
-        }
-
-        function blackjack () {
-            return SocketService.create('blackjack');
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orange.factory.users', [])
-        .factory('UsersFactory', Factory);
-
-    Factory.$inject = ['$http', '$q', 'Config', 'SessionsFactory'];
-
-    function Factory($http, $q, Config, SessionsFactory) {
-    	var factory = {
-    		update: update
-    	};
-
-    	return factory;
-
-    	function update (data) {
-            var deferred = $q.defer();
-            $http({
-                method: 'PUT',
-                url: Config.baseUrl + 'api/users/' + data.id,
-                data: data
-            }).success(function (res){
-            	SessionsFactory.create(res.data);
-            	deferred.resolve();
-            }).error(function (err){
-            	console.log(err);
-            	deferred.reject();
-            });
-            return deferred.promise;
         }
     }
 })();
@@ -8201,6 +8212,25 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
 (function() {
     'use strict';
+    angular
+        .module('orange.controller.hangman.game', [])
+        .controller('HangmanGameCtrl', Controller);
+
+    Controller.$inject = ['$scope'];
+
+    function Controller($scope) {
+    	var vm = this;
+
+    	init();
+
+    	function init(){
+    		vm.data = {};
+    	}
+    }
+})();
+
+(function() {
+    'use strict';
 
     angular
         .module('orange.controller.hangman.index', [])
@@ -8262,9 +8292,23 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
                 game: null
             };
 
+            //On page load send a join event to server with current user and game room
+            //I think we should change this to an event we emit on button click
+            //on the hangman.index view...
             $scope.socket.emit('join', $scope.session.current_user, $stateParams.room);
     	}
 
+        vm.ready = function () {
+            //TO DO
+            //Handle user clicking the ready button to signal they are good to go
+        };
+
+        vm.notReady = function () {
+            //TO DO
+            //Handle user clicking the not ready button to signal they need more time
+        };
+
+        //Listeners
         $scope.socket.on('game:joined', function (data){
             console.log('%s just joined the game!', data.player.full_name);
             vm.data.game = data.game;
