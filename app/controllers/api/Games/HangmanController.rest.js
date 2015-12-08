@@ -1,5 +1,5 @@
 var express = require('express');
-var Hangman = require('../../../models/hangman');
+var Hangman = require('../../../models/').hangman;
 var router = express.Router();
 
 router.get('/', function(req, res) {
