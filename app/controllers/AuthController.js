@@ -1,5 +1,5 @@
 var express = require('express');
-var User = require('../models/user');
+var User = require('../models/').user;
 var auth_middle = require('../middleware/auth');
 var jwt = require('../helpers/jwt');
 var router = express.Router();
