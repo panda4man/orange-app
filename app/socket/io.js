@@ -1,6 +1,7 @@
 var errors = require('../helpers/socketErrors'),
     loading = require('../helpers/socketLoading'),
-    socketioJwt = require('socketio-jwt'),
+    jwtHelper = require('../helpers/jwt'),
+    socketHelper = require('../helpers/socket'),
     HangmanController = require('../controllers/api/Games/HangmanController.socket');
 
 /**
@@ -8,19 +9,32 @@ var errors = require('../helpers/socketErrors'),
  */
 module.exports = function(io) {
     'use strict';
-    /*
-    var hangman = io.of('/hangman').on('connection', function(socket) {
-        var games = {};
-        HangmanController.respond(hangman, socket, games, errors, loading);
-    });*/
 
-	var hangman = io.of('/hangman').on('connection', socketioJwt.authorize({
-		secret: process.env.JWT_SECRET,
-		handshake: true
-	})).on('authenticated', function (socket){
-		var games = {};
-        HangmanController.respond(hangman, socket, games, errors, loading);
-	});
+    /**
+     * I implemented a custom auth protocol outlined in this blog
+     * https://facundoolano.wordpress.com/2014/10/11/better-authentication-for-socket-io-no-query-strings/
+     *
+     * It allows us to authenticate a socket without passing the jwt token as a 
+     * query string where it can be cached and picked up by sniffers
+     */
+
+    //Any sockets that aren't authed we need to remove from 
+    //global connected array
+    socketHelper.disconnectSockets(io);
+
+    var hangman = io.of('/hangman').on('connection', function(socket) {
+        var sessions = {};
+        socket.auth = false;
+        socket.on('authenticate', function(data) {
+            socketHelper.authSocket(data.token, io, socket, function() {
+                //Pass off controll to hangman socket controller
+                console.log('Auth was good so we pass along control');
+                HangmanController.respond(hangman, socket, sessions, loading);
+            });
+        });
+
+        socketHelper.authTimeout(socket);
+    });
 
     var blackjack = io.of('/blackjack').on('connection', function(socket) {
         //TO DO
