@@ -1,4 +1,5 @@
-var Hangman = require('../../../models/').hangman;
+var Hangman = require('../../../models/').hangman,
+    errors = require('../../../helpers/socket');
 
 //Maybe use this array to store all the clients trying to join?
 var _session = {
@@ -7,7 +8,7 @@ var _session = {
     player_limit: 1
 };
 
-module.exports.respond = function(endpoint, socket, _games, errors, loading) {
+module.exports.respond = function(endpoint, socket, sessions, loading) {
     console.log('User connected: %s', socket.id);
     //Listeners
     socket.on('create', function(data) {
@@ -42,7 +43,7 @@ module.exports.respond = function(endpoint, socket, _games, errors, loading) {
     socket.on('join', function(player, game) {
         console.log('%s is trying to join %s', player.id, game);
         if (_session.players.length < _session.player_limit) {
-            if(_session.players.indexOf(player.id) < 0){
+            if (_session.players.indexOf(player.id) < 0) {
                 _session.players.push(player.id);
             }
             Hangman.findOne({
@@ -92,7 +93,7 @@ module.exports.respond = function(endpoint, socket, _games, errors, loading) {
         _session.players = _session.players.filter(function(pl) {
             return pl != player.id;
         });
-        if(_session.players.length == 0){
+        if (_session.players.length == 0) {
             _session.room = '';
             _session.player_limit = 1;
         }
