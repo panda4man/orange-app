@@ -1,5 +1,5 @@
 var Hangman = require('../../../models/').hangman,
-    errors = require('../../../helpers/socket');
+    socketHelper = require('../../../helpers/socket');
 
 //Maybe use this array to store all the clients trying to join?
 var _session = {
@@ -125,7 +125,7 @@ module.exports.respond = function(endpoint, socket, sessions, loading) {
 
                         game.save(function(err) {
                             if (err) {
-                                errors.hangman(socket, err);
+                                socketHelper.errors.hangman(socket, err);
                             } else {
 
                                 //disconnect from room
