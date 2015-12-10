@@ -23,14 +23,14 @@
             };
 
             $timeout(function() {
-                vm.data.forms.create.owner = $scope.session.current_user.id;
+                vm.data.forms.create.owner = $scope.session.current_user;
             }, 500);
         }
 
         $scope.socket.on('game:created', function(game) {
             console.log(game);
             $state.go('app.master.hangman.lobby', {
-                room: game.room
+                id: game.id
             });
         });
 

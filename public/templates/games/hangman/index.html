@@ -1,13 +1,25 @@
-<div ng-if="Hangman.data.games.length == 0" class="card-panel red">You haven't made any games yet you fool.</div>
-<div class="card-panel light-blue lighten-3" ng-repeat="game in Hangman.data.games">
-    <div class="row">
-        <div class="col s12">
-        	<p>Game id: {{game.id}}</p>
-        	<p>Room Name: {{game.room}}</p>
-        	<p>Player Limit: {{game.player_limit}}</p>
-        	<p>Owner: {{game.owner.full_name}}</p>
-        	<p ng-repeat="player in game.players">{{$index+1}}: {{player.full_name}}</p>
-        	<a ui-sref="app.master.hangman.lobby({room: game.room})">Enter</a>
+<div ng-show="Hangman.data.games.length == 0" class="card-panel red">You haven't made any games yet you fool.</div>
+<div class="row">
+    <div class="col s4">
+        <h2>Chat</h2>
+        <div class="row">
+            <div class="col s12">
+            do all the chats here :)
+            </div>
+        </div>
+    </div>
+    <div class="col s8">
+        <div class="row">
+            <div class="col s12 game-entry" ng-repeat="game in Hangman.data.games track by game.id">
+                <div class="card-panel light-blue lighten-3">
+                    <p>Game id: {{game.id}}</p>
+                    <p>Room Name: {{game.room}}</p>
+                    <p>Player Limit: {{game.player_limit}}</p>
+                    <p>Owner: {{game.owner.full_name}}</p>
+                    <p ng-repeat="player in game.players">{{$index+1}}: {{player.full_name}}</p>
+                    <a ui-sref="app.master.hangman.lobby({id: game.id})">Enter</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

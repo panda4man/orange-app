@@ -42,7 +42,7 @@ var GameSchema = new Schema({
 });
 
 GameSchema.methods.fill = function(data) {
-    this.owner = mongoose.Types.ObjectId(data.owner);
+    this.owner = mongoose.Types.ObjectId(data.owner.id);
     this.room = data.room;
     this.status = data.status;
     this.player_limit = data.player_limit;

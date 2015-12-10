@@ -21,7 +21,8 @@
             //On page load send a join event to server with current user and game room
             //I think we should change this to an event we emit on button click
             //on the hangman.index view...
-            $scope.socket.emit('join', $scope.session.current_user, $stateParams.room);
+            console.log('trying to join: %s', $stateParams.id);
+            $scope.socket.emit('join', $scope.session.current_user, $stateParams.id);
     	}
 
         vm.ready = function () {
@@ -48,7 +49,7 @@
         //If player leaves the lobby remove them from game.
         $scope.$on('$destroy', function () {
             console.log('%s is leaving the lobby', $scope.session.current_user.id);
-            $scope.socket.emit('leave', $scope.session.current_user, $stateParams.room);
+            $scope.socket.emit('leave', $scope.session.current_user, vm.data.game.id);
         });
     }
 })();

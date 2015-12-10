@@ -7564,7 +7564,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
                 templateUrl: '/cache/games/hangman/create.html'
             })
              .state('app.master.hangman.lobby', {
-                url: '/:room/lobby',
+                url: '/:id/lobby',
                 title: 'Hangman | Lobby',
                 controller: 'HangmanLobbyCtrl as Hangman',
                 templateUrl: '/cache/games/hangman/lobby.html'
@@ -7716,6 +7716,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
         function init() {
             console.log('Loading the base hangman controller');
             $scope.socket = socket.hangman();
+            $scope.games = [];
 
             //Listen to the server connect event
             $scope.socket.on('connect', function () {
@@ -7727,18 +7728,19 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
                 $rootScope.$broadcast('event:auth-loginRequired');
             });
 
+            //Socket listener to load games. Have to wait for socket to say it's ok.
+            $scope.socket.on('games:updated', function (games) {
+                console.log('Received a games:updated event');
+                $scope.games = games;
+                $scope.$broadcast('games:updated');
+            });
+
+            //Catch errors
             $scope.socket.on('game:error', function(error) {
                 console.log(error);
             });
 
-            $scope.socket.on('game:joined', function(data) {
-                console.log('Someone joined: ' + JSON.stringify(data));
-            });
-
-            $scope.socket.on('game:left', function(data) {
-                console.log('Someone left ' + JSON.stringify(data));
-            });
-
+            //This should be auth errors for the token
             $scope.socket.on("error", function(error) {
                 if (error.type == "UnauthorizedError" || error.code == "invalid_token") {
                     // redirect user to login page perhaps?
@@ -8180,7 +8182,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
     function Service(socketFactory) {
         this.create = function(namespace) {
             var socket = io.connect('http://localhost:4200/' + namespace);
-            
+
             return socketFactory({
                 ioSocket: socket
             });
@@ -8213,14 +8215,14 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
             };
 
             $timeout(function() {
-                vm.data.forms.create.owner = $scope.session.current_user.id;
+                vm.data.forms.create.owner = $scope.session.current_user;
             }, 500);
         }
 
         $scope.socket.on('game:created', function(game) {
             console.log(game);
             $state.go('app.master.hangman.lobby', {
-                room: game.room
+                id: game.id
             });
         });
 
@@ -8268,26 +8270,21 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
                 games: []
             };
 
-            getGames();
+            $scope.socket.emit('games:request');
         }
 
-        function getGames() {
-            console.log('Retrieving updated game list.');
-            HangmanFactory.all().then(function(games) {
-                vm.data.games = games;
-            }, function() {
-
-            });
-        }
+        $scope.$on('games:updated', function() {
+            console.log('games were updated');
+            vm.data.games = $scope.games;
+        });
 
         //When a user leaves we need to reload the
         $scope.socket.on('game:leave', function(player) {
-            getGames();
+            console.log('%s just left the room.', player.full_name);
         });
 
-        $scope.socket.on('game:ended', function () {
+        $scope.socket.on('game:ended', function() {
             console.log('Game just closed');
-            getGames();
         });
     }
 })();
@@ -8315,7 +8312,8 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
             //On page load send a join event to server with current user and game room
             //I think we should change this to an event we emit on button click
             //on the hangman.index view...
-            $scope.socket.emit('join', $scope.session.current_user, $stateParams.room);
+            console.log('trying to join: %s', $stateParams.id);
+            $scope.socket.emit('join', $scope.session.current_user, $stateParams.id);
     	}
 
         vm.ready = function () {
@@ -8342,7 +8340,7 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
         //If player leaves the lobby remove them from game.
         $scope.$on('$destroy', function () {
             console.log('%s is leaving the lobby', $scope.session.current_user.id);
-            $scope.socket.emit('leave', $scope.session.current_user, $stateParams.room);
+            $scope.socket.emit('leave', $scope.session.current_user, vm.data.game.id);
         });
     }
 })();
@@ -8361,5 +8359,5 @@ $templateCache.put("/cache/profile/edit.html","<div class=\"card-panel light-blu
 $templateCache.put("/cache/profile/index.html","<div class=row><div class=\"col s8 offset-s2\"><div class=\"card-panel light-blue lighten-3\"><div class=section><span class=white-text><p><b>Name</b>: {{session.current_user.full_name}}</p><p><b>Username</b>: {{session.current_user.username}}</p><p><b>Email</b>: {{session.current_user.email}}</p><p><b>Age</b>: {{session.current_user.age}}</p></span></div><div class=divider></div><div class=section><button class=\"btn pink lighten-2 waves-effect\" ui-sref=app.master.profile-edit>Edit</button></div></div></div></div>");
 $templateCache.put("/cache/sessions/register.html","<div class=\"card-panel light-blue lighten-3\"><h2>Register</h2><div class=row><form class=\"col s12\" ng-submit=Register.register()><div class=row><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.first id=first_name type=text class=validate> <label class=white-text for=first_name>First Name</label><div ng-if=errorCollection.errors.first_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.first_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div><div class=\"input-field col s6\"><input ng-model=Register.data.forms.register.name.last id=last_name type=text class=validate> <label class=white-text for=last_name>Last Name</label><div ng-if=errorCollection.errors.last_name class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.last_name\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.username id=username type=text class=validate> <label class=white-text for=username>Username</label><div ng-if=errorCollection.errors.username class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.username\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.password id=password type=password class=validate> <label class=white-text for=password>Password</label><div ng-if=errorCollection.errors.password class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.password\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><div class=row><div class=\"input-field col s12\"><input ng-model=Register.data.forms.register.email id=email type=email class=validate> <label class=white-text for=email>Email</label><div ng-if=errorCollection.errors.email class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.email\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><button type=submit class=\"btn blue waves-effect\">Get Started</button></form></div></div>");
 $templateCache.put("/cache/games/hangman/create.html","<div class=\"card-panel light-blue lighten-3\"><div class=row><form class=\"col s12\" ng-submit=Hangman.create()><div class=row><div class=\"input-field col s6\"><input ng-model=Hangman.data.forms.create.room id=room type=text class=validate> <label class=white-text for=room>Game Name</label><div ng-if=errorCollection.errors.room class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.room\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div><div class=\"input-field col s6\"><input ng-model=Hangman.data.forms.create.player_limit id=player_limit type=tel class=validate> <label class=white-text for=player_limit>Player Limit</label><div ng-if=errorCollection.errors.player_limit class=\"card-panel card-error red\"><ul><li ng-repeat=\"error in errorCollection.errors.player_limit\"><i class=\"tiny mdi-alert-warning\"></i> {{error}}</li></ul></div></div></div><button class=\"btn pink waves-effect\" type=submit>Start It!</button></form></div></div>");
-$templateCache.put("/cache/games/hangman/index.html","<div ng-if=\"Hangman.data.games.length == 0\" class=\"card-panel red\">You haven\'t made any games yet you fool.</div><div class=\"card-panel light-blue lighten-3\" ng-repeat=\"game in Hangman.data.games\"><div class=row><div class=\"col s12\"><p>Game id: {{game.id}}</p><p>Room Name: {{game.room}}</p><p>Player Limit: {{game.player_limit}}</p><p>Owner: {{game.owner.full_name}}</p><p ng-repeat=\"player in game.players\">{{$index+1}}: {{player.full_name}}</p><a ui-sref=\"app.master.hangman.lobby({room: game.room})\">Enter</a></div></div></div><a ui-sref=app.master.hangman.create class=\"btn-fixed btn-floating btn-large waves-effect waves-light red\"><i class=\"md mdi-action-favorite\"></i></a>");
+$templateCache.put("/cache/games/hangman/index.html","<div ng-show=\"Hangman.data.games.length == 0\" class=\"card-panel red\">You haven\'t made any games yet you fool.</div><div class=row><div class=\"col s4\"><h2>Chat</h2><div class=row><div class=\"col s12\">do all the chats here :)</div></div></div><div class=\"col s8\"><div class=row><div class=\"col s12 game-entry\" ng-repeat=\"game in Hangman.data.games\"><div class=\"card-panel light-blue lighten-3\"><p>Game id: {{game.id}}</p><p>Room Name: {{game.room}}</p><p>Player Limit: {{game.player_limit}}</p><p>Owner: {{game.owner.full_name}}</p><p ng-repeat=\"player in game.players\">{{$index+1}}: {{player.full_name}}</p><a ui-sref=\"app.master.hangman.lobby({id: game.id})\">Enter</a></div></div></div></div></div><a ui-sref=app.master.hangman.create class=\"btn-fixed btn-floating btn-large waves-effect waves-light red\"><i class=\"md mdi-action-favorite\"></i></a>");
 $templateCache.put("/cache/games/hangman/lobby.html","<div class=row><div class=\"col s6\"><div class=\"card-panel light-blue\" ng-if=Hangman.data.game><h2>Current Players</h2><h4>Owner => {{Hangman.data.game.owner.full_name}}</h4><p ng-repeat=\"player in Hangman.data.game.players\">{{player.full_name}}</p></div></div><div class=\"col s6\"><div class=\"card-panel light-blue\"></div></div></div>");}]);

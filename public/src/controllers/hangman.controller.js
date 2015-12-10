@@ -14,6 +14,7 @@
         function init() {
             console.log('Loading the base hangman controller');
             $scope.socket = socket.hangman();
+            $scope.games = [];
 
             //Listen to the server connect event
             $scope.socket.on('connect', function () {
@@ -25,18 +26,19 @@
                 $rootScope.$broadcast('event:auth-loginRequired');
             });
 
+            //Socket listener to load games. Have to wait for socket to say it's ok.
+            $scope.socket.on('games:updated', function (games) {
+                console.log('Received a games:updated event');
+                $scope.games = games;
+                $scope.$broadcast('games:updated');
+            });
+
+            //Catch errors
             $scope.socket.on('game:error', function(error) {
                 console.log(error);
             });
 
-            $scope.socket.on('game:joined', function(data) {
-                console.log('Someone joined: ' + JSON.stringify(data));
-            });
-
-            $scope.socket.on('game:left', function(data) {
-                console.log('Someone left ' + JSON.stringify(data));
-            });
-
+            //This should be auth errors for the token
             $scope.socket.on("error", function(error) {
                 if (error.type == "UnauthorizedError" || error.code == "invalid_token") {
                     // redirect user to login page perhaps?

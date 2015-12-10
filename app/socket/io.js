@@ -1,6 +1,4 @@
-var errors = require('../helpers/socketErrors'),
-    loading = require('../helpers/socketLoading'),
-    jwtHelper = require('../helpers/jwt'),
+var jwtHelper = require('../helpers/jwt'),
     socketHelper = require('../helpers/socket'),
     HangmanController = require('../controllers/api/Games/HangmanController.socket');
 
@@ -23,13 +21,16 @@ module.exports = function(io) {
     socketHelper.disconnectSockets(io);
 
     var hangman = io.of('/hangman').on('connection', function(socket) {
-        var sessions = {};
+        var sessions = {
+            connections: [],
+            rooms: {}
+        };
         socket.auth = false;
         socket.on('authenticate', function(data) {
             socketHelper.authSocket(data.token, io, socket, function() {
                 //Pass off controll to hangman socket controller
                 console.log('Auth was good so we pass along control');
-                HangmanController.respond(hangman, socket, sessions, loading);
+                HangmanController.respond(hangman, socket, sessions);
             });
         });
 

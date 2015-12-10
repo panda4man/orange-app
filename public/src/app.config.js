@@ -54,7 +54,7 @@
                 templateUrl: '/cache/games/hangman/create.html'
             })
              .state('app.master.hangman.lobby', {
-                url: '/:room/lobby',
+                url: '/:id/lobby',
                 title: 'Hangman | Lobby',
                 controller: 'HangmanLobbyCtrl as Hangman',
                 templateUrl: '/cache/games/hangman/lobby.html'

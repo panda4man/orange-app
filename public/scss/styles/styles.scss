@@ -33,3 +33,10 @@
     right: 20px;
     bottom:60px;
 }
+
+.game-entry {
+    animation-duration: 0.5s;
+    &.ng-enter {
+        @include effect(pulse);
+    }
+}

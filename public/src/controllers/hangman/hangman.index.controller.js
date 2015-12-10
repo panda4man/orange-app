@@ -17,26 +17,21 @@
                 games: []
             };
 
-            getGames();
+            $scope.socket.emit('games:request');
         }
 
-        function getGames() {
-            console.log('Retrieving updated game list.');
-            HangmanFactory.all().then(function(games) {
-                vm.data.games = games;
-            }, function() {
-
-            });
-        }
+        $scope.$on('games:updated', function() {
+            console.log('games were updated');
+            vm.data.games = $scope.games;
+        });
 
         //When a user leaves we need to reload the
         $scope.socket.on('game:leave', function(player) {
-            getGames();
+            console.log('%s just left the room.', player.full_name);
         });
 
-        $scope.socket.on('game:ended', function () {
+        $scope.socket.on('game:ended', function() {
             console.log('Game just closed');
-            getGames();
         });
     }
 })();
