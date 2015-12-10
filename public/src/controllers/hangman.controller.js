@@ -29,14 +29,6 @@
                 console.log(error);
             });
 
-            $scope.socket.on('game:joined', function(data) {
-                console.log('Someone joined: ' + JSON.stringify(data));
-            });
-
-            $scope.socket.on('game:left', function(data) {
-                console.log('Someone left ' + JSON.stringify(data));
-            });
-
             $scope.socket.on("error", function(error) {
                 if (error.type == "UnauthorizedError" || error.code == "invalid_token") {
                     // redirect user to login page perhaps?
