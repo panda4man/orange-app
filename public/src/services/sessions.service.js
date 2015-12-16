@@ -5,9 +5,9 @@
 	.module('orange.service.sessions', [])
 	.service('SessionsService', Service);
 
-	Service.$inject = ['$window'];
+	Service.$inject = ['$window', '$http'];
 
-	function Service ($window) {
+	function Service ($window, $http) {
 		var self = this;
 
 		self.create = function (data, user, token) {
