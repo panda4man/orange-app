@@ -21,7 +21,7 @@
 
 		self.format = function (errors) {
 			var _errors = {};
-			if(errors.length){
+			if(Object.prototype.toString.call(errors) === '[object Array]'){
 				if(errors[0].hasOwnProperty('param') && errors[0].hasOwnProperty('msg')) {
 					var x = 0;
 					for(x; x < errors.length; x++){
@@ -41,6 +41,8 @@
 						}
 					}
 				}
+			} else {
+				console.log(JSON.stringify(errors));
 			}
 			return _errors;
 		}
