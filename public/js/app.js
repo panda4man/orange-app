@@ -7629,6 +7629,193 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
 
 (function() {
     'use strict';
+    angular
+        .module('orange.controller.base', [])
+        .controller('BaseCtrl', Controller);
+
+    Controller.$inject = ['$rootScope', '$scope', '$state', 'authService', 'SessionsFactory', 'Config', 'ErrorsFactory'];
+
+    function Controller($rootScope, $scope, $state, authService, SessionsFactory, Config, ErrorsFactory) {
+        var vm = this;
+
+        init();
+
+        function init() {
+            $scope.session = SessionsFactory.session.session;
+            $scope.config = Config;
+            $scope.errorCollection = ErrorsFactory.errorCollection;
+            vm.data = {
+                forms: {
+                    login: {
+                        username: '',
+                        password: ''
+                    }
+                }
+            };
+            console.log('Loading base controller');
+
+            SessionsFactory.profile();
+        }
+
+        $rootScope.$on('event:auth-loginRequired', function(events, msg) {
+            SessionsFactory.logout();
+            showLogin();
+        });
+
+        $rootScope.$on('event:auth-loginConfirmed', function (events, msg){
+            hideLoginModal();
+        });
+
+        function showLogin() {
+            $(function() {
+                if($state.current.name != "app.simple.register")
+                    $('#login').openModal();
+            });
+        }
+
+        function hideLoginModal() {
+            $(function() {
+                $('#login').closeModal();
+            });
+        }
+
+        $scope.register = function () {
+            hideLoginModal();
+            $state.go('app.simple.register');
+        }
+
+        $scope.login = function() {
+            SessionsFactory.login(vm.data.forms.login).then(function(res) {
+                vm.data.forms.login = {};
+                authService.loginConfirmed();
+                hideLoginModal();
+            }, function(err) {
+                console.log(err);
+            });
+        }
+
+        $scope.logout = function() {
+            $rootScope.$broadcast('event:auth-loginRequired');
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orange.controller.hangman.base', [])
+        .controller('HangmanCtrl', Controller);
+
+    Controller.$inject = ['$scope', '$rootScope', '$state', '$timeout', 'SocketFactory']
+
+    function Controller($scope, $rootScope, $state, $timeout, socket) {
+        var vm = this;
+        init();
+
+        function init() {
+            console.log('Loading the base hangman controller');
+            $scope.socket = socket.hangman();
+
+            //Listen to the server connect event
+            $scope.socket.on('connect', function () {
+                $scope.socket.emit('authenticate', {token: localStorage.getItem('satellizer_token')});
+            });
+
+            //Socket was not authorized so we need to relog
+            $scope.socket.on('unauthorized', function () {
+                $rootScope.$broadcast('event:auth-loginRequired');
+            });
+
+            $scope.socket.on('game:error', function(error) {
+                console.log(error);
+            });
+
+            $scope.socket.on("error", function(error) {
+                if (error.type == "UnauthorizedError" || error.code == "invalid_token") {
+                    // redirect user to login page perhaps?
+                    console.log("User's token has expired");
+                } else {
+                    console.log(error);
+                }
+            });
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.hangman.base', 'orange.controllers.hangman', 'orange.controller.profile', 'orange.controller.register']);
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.controller.profile', [])
+        .controller('ProfileCtrl', Controller);
+
+    Controller.$inject = ['$scope', '$state', 'UsersFactory'];
+
+    function Controller($scope, $state, UsersFactory) {
+        var vm = this;
+
+        init();
+
+        function init() {
+            console.log('loaded the profile controller');
+            vm.data = {
+                forms: {
+                    edit: {}
+                }
+            };
+        }
+
+        vm.update = function() {
+            UsersFactory.update($scope.session.current_user).then(function () {
+                $state.go('app.master.profile');
+            }, function () {
+
+            });
+        };
+    }
+})();
+
+(function() {
+    'use strict';
+    angular
+        .module('orange.controller.register', [])
+        .controller('RegisterCtrl', Controller);
+
+    Controller.$inject = ['$scope', '$state', 'SessionsFactory'];
+
+    function Controller($scope, $state, SessionsFactory) {
+        var vm = this;
+
+        init();
+
+        function init() {
+            vm.data = {
+                forms: {
+                    register: {
+
+                    }
+                }
+            };
+        }
+
+        vm.register = function() {
+            SessionsFactory.register(vm.data.forms.register).then(function() {
+                vm.data.forms.register = {};
+                $state.go('app.master.profile');
+            }, function() {
+
+            });
+        }
+    }
+})();
+
+(function() {
+    'use strict';
 
     angular
         .module('orange.factory.errors', [])
@@ -7854,193 +8041,6 @@ this.$get=["$$animateJs","$$AnimateRunner",function(a,c){function d(c){return a(
             	deferred.reject();
             });
             return deferred.promise;
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-    angular
-        .module('orange.controller.base', [])
-        .controller('BaseCtrl', Controller);
-
-    Controller.$inject = ['$rootScope', '$scope', '$state', 'authService', 'SessionsFactory', 'Config', 'ErrorsFactory'];
-
-    function Controller($rootScope, $scope, $state, authService, SessionsFactory, Config, ErrorsFactory) {
-        var vm = this;
-
-        init();
-
-        function init() {
-            $scope.session = SessionsFactory.session.session;
-            $scope.config = Config;
-            $scope.errorCollection = ErrorsFactory.errorCollection;
-            vm.data = {
-                forms: {
-                    login: {
-                        username: '',
-                        password: ''
-                    }
-                }
-            };
-            console.log('Loading base controller');
-
-            SessionsFactory.profile();
-        }
-
-        $rootScope.$on('event:auth-loginRequired', function(events, msg) {
-            SessionsFactory.logout();
-            showLogin();
-        });
-
-        $rootScope.$on('event:auth-loginConfirmed', function (events, msg){
-            hideLoginModal();
-        });
-
-        function showLogin() {
-            $(function() {
-                if($state.current.name != "app.simple.register")
-                    $('#login').openModal();
-            });
-        }
-
-        function hideLoginModal() {
-            $(function() {
-                $('#login').closeModal();
-            });
-        }
-
-        $scope.register = function () {
-            hideLoginModal();
-            $state.go('app.simple.register');
-        }
-
-        $scope.login = function() {
-            SessionsFactory.login(vm.data.forms.login).then(function(res) {
-                vm.data.forms.login = {};
-                authService.loginConfirmed();
-                hideLoginModal();
-            }, function(err) {
-                console.log(err);
-            });
-        }
-
-        $scope.logout = function() {
-            $rootScope.$broadcast('event:auth-loginRequired');
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orange.controller.hangman.base', [])
-        .controller('HangmanCtrl', Controller);
-
-    Controller.$inject = ['$scope', '$rootScope', '$state', '$timeout', 'SocketFactory']
-
-    function Controller($scope, $rootScope, $state, $timeout, socket) {
-        var vm = this;
-        init();
-
-        function init() {
-            console.log('Loading the base hangman controller');
-            $scope.socket = socket.hangman();
-
-            //Listen to the server connect event
-            $scope.socket.on('connect', function () {
-                $scope.socket.emit('authenticate', {token: localStorage.getItem('satellizer_token')});
-            });
-
-            //Socket was not authorized so we need to relog
-            $scope.socket.on('unauthorized', function () {
-                $rootScope.$broadcast('event:auth-loginRequired');
-            });
-
-            $scope.socket.on('game:error', function(error) {
-                console.log(error);
-            });
-
-            $scope.socket.on("error", function(error) {
-                if (error.type == "UnauthorizedError" || error.code == "invalid_token") {
-                    // redirect user to login page perhaps?
-                    console.log("User's token has expired");
-                } else {
-                    console.log(error);
-                }
-            });
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-    angular.module('orange.controllers', ['orange.controller.base', 'orange.controller.hangman.base', 'orange.controllers.hangman', 'orange.controller.profile', 'orange.controller.register']);
-})();
-
-(function() {
-    'use strict';
-    angular
-        .module('orange.controller.profile', [])
-        .controller('ProfileCtrl', Controller);
-
-    Controller.$inject = ['$scope', '$state', 'UsersFactory'];
-
-    function Controller($scope, $state, UsersFactory) {
-        var vm = this;
-
-        init();
-
-        function init() {
-            console.log('loaded the profile controller');
-            vm.data = {
-                forms: {
-                    edit: {}
-                }
-            };
-        }
-
-        vm.update = function() {
-            UsersFactory.update($scope.session.current_user).then(function () {
-                $state.go('app.master.profile');
-            }, function () {
-
-            });
-        };
-    }
-})();
-
-(function() {
-    'use strict';
-    angular
-        .module('orange.controller.register', [])
-        .controller('RegisterCtrl', Controller);
-
-    Controller.$inject = ['$scope', '$state', 'SessionsFactory'];
-
-    function Controller($scope, $state, SessionsFactory) {
-        var vm = this;
-
-        init();
-
-        function init() {
-            vm.data = {
-                forms: {
-                    register: {
-
-                    }
-                }
-            };
-        }
-
-        vm.register = function() {
-            SessionsFactory.register(vm.data.forms.register).then(function() {
-                vm.data.forms.register = {};
-                $state.go('app.master.profile');
-            }, function() {
-
-            });
         }
     }
 })();
